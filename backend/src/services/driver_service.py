@@ -17,9 +17,13 @@ def list_drivers() -> list[dict]:
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail=f"Unauthorized: {exc}",
             )
-        else:
+        elif exc.status == status.HTTP_401_UNAUTHORIZED:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to fetch drivers: {exc}",
+            )
+        else: 
+            raise HTTPException(
+                detail=f"Error : {exc}",
             )
     return response.data or []
