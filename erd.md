@@ -5,7 +5,6 @@ erDiagram
         string customer_name
         string billing_address
         string phone
-        string complains
     }
 
     SERVICE_LOCATIONS {
@@ -64,9 +63,9 @@ erDiagram
 
     USERS {
         UUID user_id PK
+        UUID profile_id FK
         UUID customer_id FK
         UUID driver_id FK
-        UUID profile_id FK
     }
 
     %% Relationships

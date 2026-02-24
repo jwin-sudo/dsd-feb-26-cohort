@@ -22,7 +22,7 @@ class Customer(SQLModel, table=True):
 
     customer_id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
     customer_name: str
-    address: str
+    billing_address: str
     phone : str
 
 class Location(SQLModel, table=True):
@@ -90,6 +90,13 @@ class ServiceJob(SQLModel, table=True):
 class UserRole(str, Enum):
     DRIVER = "driver"
     CUSTOMER = "customer"
+
+class User(SQLModel, table=True):
+    __tablename__ = "user"
+    id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
+    profile_id : UUID = Field(foreign_key="profile.id", index = True)
+    driver_id : UUID = Field(foreign_key="drivers.driver_id", index = True)
+    customer_id : UUID = Field(foreign_key="customers.customer_id", index = True)
 
 
 class Profile(SQLModel, table=True):
