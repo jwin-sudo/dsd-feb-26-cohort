@@ -2,7 +2,6 @@
 erDiagram
     CUSTOMERS {
         UUID customer_id PK
-        UUID id FK
         string customer_name
         string billing_address
         string phone
@@ -15,8 +14,9 @@ erDiagram
         UUID customer_id FK
         UUID job_id FK
         string street_address
-        float lat
-        float long
+        str city
+        int zipcode
+        str state
     }
 
     DRIVERS {
@@ -30,8 +30,6 @@ erDiagram
         UUID driver_id FK
         date service_date
         string start_location_name
-        float start_lat
-        float start_long
         string status
     }
 
@@ -59,15 +57,25 @@ erDiagram
     }
 
     PROFILES {
-        UUID id PK
+        UUID profile_id PK
+        UUID user_id FK
         string role "Customer|Driver"
+    }
+
+    USERS {
+        UUID user_id PK
+        UUID customer_id FK
+        UUID driver_id FK
+        UUID profile_id FK
     }
 
     %% Relationships
     CUSTOMERS ||--o{ SERVICE_LOCATIONS : "owned"
-    CUSTOMERS ||--o| PROFILES : "linked"
+    USERS ||--|| PROFILES : "assigned"
+    USERS ||--|| PROFILES : "assigned_to"
+    USERS ||--o| CUSTOMERS : "assigned"
+    USERS ||--o| DRIVERS : "assigned"
     DRIVERS ||--o{ ROUTES : "assigned_to"
-    DRIVERS ||--o| PROFILES : "linked"
     ROUTES ||--o{ SERVICE_JOBS : "executes"
     ROUTES ||--o{ SERVICE_LOCATIONS : "belonged"
     SERVICE_JOBS ||--o| SERVICE_REQUESTS : "generates"
