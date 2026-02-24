@@ -21,12 +21,13 @@ class Customer(SQLModel, table=True):
     __tablename__ = "customers"
 
     customer_id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
+    user_id: UUID = Field(foreign_key="profiles.user_id", index=True)
     customer_name: str
     address: str
     phone : str
 
 class Location(SQLModel, table=True):
-    __tablename__ = "locations"
+    __tablename__ = "service_locations"
 
     location_id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
     customer_id: UUID = Field(foreign_key="customers.customer_id", index=True)
@@ -39,6 +40,7 @@ class Driver(SQLModel, table=True):
     __tablename__ = "drivers"
 
     driver_id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
+    user_id: UUID = Field(foreign_key="profiles.user_id", index=True)
     driver_name: str
 
 class Routes(SQLModel, table=True):
@@ -56,7 +58,7 @@ class Request(SQLModel, table=True):
     __tablename__ = "requests"
 
     request_id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
-    location_id: UUID = Field(foreign_key="locations.location_id", index=True)
+    location_id: UUID = Field(foreign_key="service_locations.location_id", index=True)
     request_type: RequestType = Field(index=True)
     requested_for_date: datetime = Field(index=True)
     created_at: datetime
@@ -78,15 +80,26 @@ class ServiceJob(SQLModel, table=True):
 
     job_id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
     location_id: UUID = Field(
-        foreign_key="locations.location_id",
+        foreign_key="service_locations.location_id",
         index=True,
     )
     route_id: Optional[UUID] = Field(
         default=None,
-        foreign_key="routes.region_id",
+        foreign_key="routes.route_id",
         index=True,
         nullable=True,
     )
+
+class UserRole(str, Enum):
+    DRIVER = "driver"
+    CUSTOMER = "customer"
+
+
+class Profile(SQLModel, table=True):
+    __tablename__ = "profiles"
+    user_id: UUID = Field(primary_key=True, index=True)
+    role: UserRole = Field(index=True)
+
 
     job_source: JobSource = Field(index=True)
     completed_at: Optional[datetime] = Field(default=None, index=True)
