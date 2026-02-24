@@ -2,6 +2,7 @@
 erDiagram
     CUSTOMERS {
         UUID customer_id PK
+        UUID user_id FK
         string customer_name
         string billing_address
         string phone
@@ -19,6 +20,7 @@ erDiagram
 
     DRIVERS {
         UUID driver_id PK
+        UUID user_id FK
         string driver_name
     }
 
@@ -55,9 +57,16 @@ erDiagram
         string status "PROCESSED|PENDING"
     }
 
+    PROFILES {
+        UUID user_id PK
+        string role "Customer|Driver"
+    }
+
     %% Relationships
     CUSTOMERS ||--o{ SERVICE_LOCATIONS : "owns"
+    CUSTOMERS ||--o| PROFILES : "linked"
     DRIVERS ||--o{ ROUTES : "assigned_to"
+    DRIVERS ||--o| PROFILES : "linked"
     ROUTES ||--o{ SERVICE_JOBS : "executes"
     SERVICE_JOBS ||--o| REQUESTS : "generates"
     SERVICE_LOCATIONS ||--o{ SERVICE_JOBS : "has_history"
