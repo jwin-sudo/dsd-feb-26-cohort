@@ -92,7 +92,7 @@ class UserRole(str, Enum):
     CUSTOMER = "customer"
 
 class User(SQLModel, table=True):
-    __tablename__ = "user"
+    __tablename__ = "users"
     id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
     profile_id : UUID = Field(foreign_key="profile.id", index = True)
     driver_id : UUID = Field(foreign_key="drivers.driver_id", index = True)
