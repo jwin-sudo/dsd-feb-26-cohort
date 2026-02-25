@@ -101,5 +101,5 @@ class UserRole(str, Enum):
 class User(SQLModel, table=True):
     __tablename__ = "users"
     id: UUID = Field(primary_key=True, index=True, foreign_key="auth.users.id")
-    role: UserRole = Field(index=True)
+    role: Optional[UserRole] = Field(default=None, index=True)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
