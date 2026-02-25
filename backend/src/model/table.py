@@ -12,10 +12,23 @@ class RequestType(str, Enum):
     SKIP = "SKIP"
     EXTRA = "EXTRA"
 
-
 class RequestStatus(str, Enum):
     PENDING = "PENDING"
     PROCESSED = "PROCESSED"
+
+class UserRole(str, Enum):
+    DRIVER = "driver"
+    CUSTOMER = "customer"
+
+class JobSource(str, Enum):
+    SCHEDULED = "SCHEDULED"
+    EXTRA_REQUEST = "EXTRA_REQUEST"
+
+class JobStatus(str, Enum):
+    PENDING = "PENDING"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+    SKIPPED = "SKIPPED"
 
 class Customer(SQLModel, table=True):
     __tablename__ = "customers"
@@ -29,8 +42,9 @@ class Location(SQLModel, table=True):
     __tablename__ = "service_locations"
 
     location_id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
-    customer_id: UUID = Field(foreign_key="customers.customer_id", index=True)
     route_id: UUID = Field(foreign_key="routes.route_id", index=True)
+    customer_id: UUID = Field(foreign_key="customers.customer_id", index=True)
+    job_id: UUID = Field(foreign_key="profiles.id", index=True)
     street_address : str
     city : str
     zipcode : int
@@ -51,62 +65,45 @@ class Routes(SQLModel, table=True):
     start_location_name : str
     status : str
 
-class Request(SQLModel, table=True):
-    __tablename__ = "requests"
-
-    request_id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
-    location_id: UUID = Field(foreign_key="service_locations.location_id", index=True)
-    request_type: RequestType = Field(index=True)
-    requested_for_date: datetime = Field(index=True)
-    created_at: datetime
-
-    status: RequestStatus = Field(default=RequestStatus.PENDING, index=True)
-
-class JobSource(str, Enum):
-    SCHEDULED = "SCHEDULED"
-    EXTRA_REQUEST = "EXTRA_REQUEST"
-
-class JobStatus(str, Enum):
-    PENDING = "PENDING"
-    COMPLETED = "COMPLETED"
-    FAILED = "FAILED"
-    SKIPPED = "SKIPPED"
-
 class ServiceJob(SQLModel, table=True):
     __tablename__ = "service_jobs"
 
     job_id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
-    location_id: UUID = Field(
-        foreign_key="service_locations.location_id",
-        index=True,
-    )
+    location_id: UUID = Field(foreign_key="service_locations.location_id",index=True)
     route_id: Optional[UUID] = Field(
         default=None,
         foreign_key="routes.route_id",
         index=True,
         nullable=True,
     )
-
-class UserRole(str, Enum):
-    DRIVER = "driver"
-    CUSTOMER = "customer"
-
-class User(SQLModel, table=True):
-    __tablename__ = "users"
-    id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
-    profile_id : UUID = Field(foreign_key="profile.id", index = True)
-    driver_id : UUID = Field(foreign_key="drivers.driver_id", index = True)
-    customer_id : UUID = Field(foreign_key="customers.customer_id", index = True)
-
-
-class Profile(SQLModel, table=True):
-    __tablename__ = "profiles"
-    id: UUID = Field(foreign_key="auth.users.id", index=True)
-    role: UserRole = Field(index=True)
-
-
+    request_id = Field(foreign_key="requests.request_id", index=True)
+    sequence_order : int
     job_source: JobSource = Field(index=True)
     completed_at: Optional[datetime] = Field(default=None, index=True)
     status: JobStatus = Field(default=JobStatus.PENDING, index=True)
     failure_reason: Optional[str] = Field(default=None, nullable=True)
     proof_of_service_photo: Optional[str] = Field(default=None, nullable=True)
+
+class Service_Request(SQLModel, table=True):
+    __tablename__ = "requests"
+
+    request_id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
+    location_id: UUID = Field(foreign_key="service_locations.location_id", index=True)
+    job_id: UUID = Field(foreign_key="profiles.id", index=True)
+    request_type: RequestType = Field(index=True)
+    requested_for_date: datetime = Field(index=True)
+    created_at: datetime
+    status: RequestStatus = Field(default=RequestStatus.PENDING, index=True)
+
+class Profile(SQLModel, table=True):
+    __tablename__ = "profiles"
+    id: UUID = Field(foreign_key="auth.users.id", index=True)
+    user_id: UUID = Field(foreign_key="users.id", index=True)
+    role: UserRole = Field(index=True)
+
+class User(SQLModel, table=True):
+    __tablename__ = "users"
+    id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
+    profile_id : UUID = Field(foreign_key="profile.id", index = True)
+    customer_id : UUID = Field(foreign_key="customers.customer_id", index = True)
+    driver_id : UUID = Field(foreign_key="drivers.driver_id", index = True)

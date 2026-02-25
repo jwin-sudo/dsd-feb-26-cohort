@@ -42,7 +42,7 @@ erDiagram
         datetime completed_at
         string status "PENDING|COMPLETED|FAILED|SKIPPED"
         string failure_reason
-        photos proof_of_service_photo
+        str proof_of_service_photo
     }
 
     SERVICE_REQUESTS {
