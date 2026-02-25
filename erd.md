@@ -5,16 +5,17 @@ erDiagram
         string customer_name
         string billing_address
         string phone
-        string complains
     }
 
     SERVICE_LOCATIONS {
         UUID location_id PK
+        UUID route_id FK
         UUID customer_id FK
         UUID job_id FK
         string street_address
-        float lat
-        float long
+        str city
+        int zipcode
+        str state
     }
 
     DRIVERS {
@@ -28,8 +29,6 @@ erDiagram
         UUID driver_id FK
         date service_date
         string start_location_name
-        float start_lat
-        float start_long
         string status
     }
 
@@ -46,20 +45,39 @@ erDiagram
         photos proof_of_service_photo
     }
 
-    REQUESTS {
+    SERVICE_REQUESTS {
         UUID request_id PK
         UUID location_id FK
+        UUID job_id FK
         string request_type "SKIP|EXTRA"
         datetime requested_for_date
         datetime created_at
         string status "PROCESSED|PENDING"
     }
 
+    PROFILES {
+        UUID profile_id PK
+        UUID user_id FK
+        string role "Customer|Driver"
+    }
+
+    USERS {
+        UUID user_id PK
+        UUID profile_id FK
+        UUID customer_id FK
+        UUID driver_id FK
+    }
+
     %% Relationships
-    CUSTOMERS ||--o{ SERVICE_LOCATIONS : "owns"
+    CUSTOMERS ||--o{ SERVICE_LOCATIONS : "owned"
+    USERS ||--|| PROFILES : "assigned"
+    USERS ||--|| PROFILES : "assigned_to"
+    USERS ||--o| CUSTOMERS : "assigned"
+    USERS ||--o| DRIVERS : "assigned"
     DRIVERS ||--o{ ROUTES : "assigned_to"
     ROUTES ||--o{ SERVICE_JOBS : "executes"
-    SERVICE_JOBS ||--o| REQUESTS : "generates"
+    ROUTES ||--o{ SERVICE_LOCATIONS : "belonged"
+    SERVICE_JOBS ||--o| SERVICE_REQUESTS : "generates"
     SERVICE_LOCATIONS ||--o{ SERVICE_JOBS : "has_history"
-    SERVICE_LOCATIONS ||--o{ REQUESTS : "generates"
+    SERVICE_LOCATIONS ||--o{ SERVICE_REQUESTS : "generates"
 ```

@@ -22,18 +22,19 @@ class Customer(SQLModel, table=True):
 
     customer_id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
     customer_name: str
-    address: str
+    billing_address: str
     phone : str
 
 class Location(SQLModel, table=True):
-    __tablename__ = "locations"
+    __tablename__ = "service_locations"
 
     location_id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
     customer_id: UUID = Field(foreign_key="customers.customer_id", index=True)
     route_id: UUID = Field(foreign_key="routes.route_id", index=True)
     street_address : str
-    lat : float
-    long : float
+    city : str
+    zipcode : int
+    state : str
 
 class Driver(SQLModel, table=True):
     __tablename__ = "drivers"
@@ -48,15 +49,13 @@ class Routes(SQLModel, table=True):
     driver_id: UUID = Field(foreign_key="drivers.driver_id", index=True)
     service_date : datetime
     start_location_name : str
-    start_lat : float
-    start_long : float
-    status : str #What is this for?
+    status : str
 
 class Request(SQLModel, table=True):
     __tablename__ = "requests"
 
     request_id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
-    location_id: UUID = Field(foreign_key="locations.location_id", index=True)
+    location_id: UUID = Field(foreign_key="service_locations.location_id", index=True)
     request_type: RequestType = Field(index=True)
     requested_for_date: datetime = Field(index=True)
     created_at: datetime
@@ -78,15 +77,33 @@ class ServiceJob(SQLModel, table=True):
 
     job_id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
     location_id: UUID = Field(
-        foreign_key="locations.location_id",
+        foreign_key="service_locations.location_id",
         index=True,
     )
     route_id: Optional[UUID] = Field(
         default=None,
-        foreign_key="routes.region_id",
+        foreign_key="routes.route_id",
         index=True,
         nullable=True,
     )
+
+class UserRole(str, Enum):
+    DRIVER = "driver"
+    CUSTOMER = "customer"
+
+class User(SQLModel, table=True):
+    __tablename__ = "users"
+    id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
+    profile_id : UUID = Field(foreign_key="profile.id", index = True)
+    driver_id : UUID = Field(foreign_key="drivers.driver_id", index = True)
+    customer_id : UUID = Field(foreign_key="customers.customer_id", index = True)
+
+
+class Profile(SQLModel, table=True):
+    __tablename__ = "profiles"
+    id: UUID = Field(foreign_key="auth.users.id", index=True)
+    role: UserRole = Field(index=True)
+
 
     job_source: JobSource = Field(index=True)
     completed_at: Optional[datetime] = Field(default=None, index=True)
