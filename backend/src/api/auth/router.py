@@ -3,7 +3,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
 from typing import Literal
 
-from .supabase_auth import upsert_profile_role, verify_supabase_token
+from .supabase_auth import upsert_user_role, verify_supabase_token
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 security = HTTPBearer(auto_error=False)
@@ -26,18 +26,18 @@ async def get_current_user(
             detail="Missing bearer token",
         )
 
-    return await verify_supabase_token(credentials.credentials) # todo: cache this result to avoid hitting Supabase on every request
+    return await verify_supabase_token(credentials.credentials)
 
 # Endpoint to get the current user's info (id, email, role)
 @router.get("/me")
 async def me(user: dict = Depends(get_current_user)) -> dict:
     return user
 
-# Endpoint to set the user's role (driver or customer) in the profiles table
+# Endpoint to set the user's role (driver or customer) in the users table
 @router.post("/role")
 async def set_role(
     payload: SetRolePayload,
     user: dict = Depends(get_current_user),
 ) -> dict:
-    profile = upsert_profile_role(user["id"], payload.role)
-    return {"id": user["id"], "role": profile.get("role")}
+    user_row = upsert_user_role(user["id"], payload.role)
+    return {"id": user["id"], "role": user_row.get("role")}

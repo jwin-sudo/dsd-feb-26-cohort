@@ -2,11 +2,11 @@ from fastapi import HTTPException, status
 from ..supabase_client import supabase, supabase_admin
 from typing import Literal, Optional
 
-# Helper function to fetch the user's role from the profiles table based on their user ID
-def _get_role_from_profiles(user_id: str) -> Optional[str]:
+# Helper function to fetch the user's role from the users table based on their user ID
+def _get_role_from_users(user_id: str) -> Optional[str]:
     client = supabase_admin or supabase
     response = (
-        client.table("profiles")
+        client.table("users")
         .select("role")
         .eq("id", user_id)
         .limit(1)
@@ -36,7 +36,7 @@ async def verify_supabase_token(token: str) -> dict:
             "id": response.user.id,
             "email": response.user.email,
             "user_metadata": response.user.user_metadata,
-            "role": _get_role_from_profiles(response.user.id),
+            "role": _get_role_from_users(response.user.id),
         }
     except Exception as e:
         raise HTTPException(
@@ -44,13 +44,12 @@ async def verify_supabase_token(token: str) -> dict:
             detail=f"Token verification failed: {str(e)}",
         )
 
-# Upsert the user's role in the profiles table based on their user ID
-# If the profile already exists, it will update the role; if it doesn't exist, it will create a new profile with the given role
-# Returns the updated or created profile data
-def upsert_profile_role(user_id: str, role: Literal["driver", "customer"]) -> dict:
+# Upsert the user's role in the users table based on their user ID.
+# If the user row already exists, it updates role; otherwise it creates the row.
+def upsert_user_role(user_id: str, role: Literal["driver", "customer"]) -> dict:
     client = supabase_admin or supabase
     response = (
-        client.table("profiles")
+        client.table("users")
         .upsert({"id": user_id, "role": role}, on_conflict="id")
         .execute()
     )
@@ -59,7 +58,7 @@ def upsert_profile_role(user_id: str, role: Literal["driver", "customer"]) -> di
     if not data:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to upsert profile role",
+            detail="Failed to upsert user role",
         )
     return data[0]
 

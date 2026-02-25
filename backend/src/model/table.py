@@ -21,6 +21,7 @@ class Customer(SQLModel, table=True):
     __tablename__ = "customers"
 
     customer_id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
+    user_id: UUID = Field(foreign_key="users.id", unique=True, index=True)
     customer_name: str
     billing_address: str
     phone : str
@@ -40,6 +41,7 @@ class Driver(SQLModel, table=True):
     __tablename__ = "drivers"
 
     driver_id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
+    user_id: UUID = Field(foreign_key="users.id", unique=True, index=True)
     driver_name: str
 
 class Routes(SQLModel, table=True):
@@ -86,6 +88,11 @@ class ServiceJob(SQLModel, table=True):
         index=True,
         nullable=True,
     )
+    job_source: JobSource = Field(index=True)
+    completed_at: Optional[datetime] = Field(default=None, index=True)
+    status: JobStatus = Field(default=JobStatus.PENDING, index=True)
+    failure_reason: Optional[str] = Field(default=None, nullable=True)
+    proof_of_service_photo: Optional[str] = Field(default=None, nullable=True)
 
 class UserRole(str, Enum):
     DRIVER = "driver"
@@ -93,20 +100,6 @@ class UserRole(str, Enum):
 
 class User(SQLModel, table=True):
     __tablename__ = "users"
-    id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
-    profile_id : UUID = Field(foreign_key="profile.id", index = True)
-    driver_id : UUID = Field(foreign_key="drivers.driver_id", index = True)
-    customer_id : UUID = Field(foreign_key="customers.customer_id", index = True)
-
-
-class Profile(SQLModel, table=True):
-    __tablename__ = "profiles"
-    id: UUID = Field(foreign_key="auth.users.id", index=True)
+    id: UUID = Field(primary_key=True, index=True, foreign_key="auth.users.id")
     role: UserRole = Field(index=True)
-
-
-    job_source: JobSource = Field(index=True)
-    completed_at: Optional[datetime] = Field(default=None, index=True)
-    status: JobStatus = Field(default=JobStatus.PENDING, index=True)
-    failure_reason: Optional[str] = Field(default=None, nullable=True)
-    proof_of_service_photo: Optional[str] = Field(default=None, nullable=True)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
