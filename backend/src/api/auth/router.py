@@ -8,11 +8,9 @@ from .supabase_auth import upsert_user_role, verify_supabase_token
 router = APIRouter(prefix="/auth", tags=["authentication"])
 security = HTTPBearer(auto_error=False)
 
-# Payload model for setting the user's role (driver or customer)
-class SetRolePayload(BaseModel): # todo: rename to UpdateRolePayload
+class UpdateRolePayload(BaseModel):
     role: Literal["driver", "customer"]
 
-# Get current user info from the bearer token and verify it with Supabase
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(security),
 ) -> dict:
@@ -28,15 +26,13 @@ async def get_current_user(
 
     return await verify_supabase_token(credentials.credentials)
 
-# Endpoint to get the current user's info (id, email, role)
 @router.get("/me")
 async def me(user: dict = Depends(get_current_user)) -> dict:
     return user
 
-# Endpoint to set the user's role (driver or customer) in the users table
 @router.post("/role")
 async def set_role(
-    payload: SetRolePayload,
+    payload: UpdateRolePayload,
     user: dict = Depends(get_current_user),
 ) -> dict:
     user_row = upsert_user_role(user["id"], payload.role)
