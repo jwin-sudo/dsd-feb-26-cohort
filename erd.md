@@ -15,7 +15,7 @@ erDiagram
         UUID job_id FK
         string street_address
         str city
-        int zipcode
+        str zipcode
         str state
     }
 
@@ -44,7 +44,7 @@ erDiagram
         datetime completed_at
         string status "PENDING|COMPLETED|FAILED|SKIPPED"
         string failure_reason
-        photos proof_of_service_photo
+        str proof_of_service_photo
     }
 
     SERVICE_REQUESTS {
