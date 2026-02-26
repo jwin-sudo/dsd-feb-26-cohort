@@ -1,4 +1,4 @@
-
+import { useState } from "react";
 import logo from "../assets/image.jpeg";
 import { ChevronFirst, ChevronLast } from "lucide-react";
 import { CircleUser } from "lucide-react";
@@ -11,10 +11,11 @@ type SidebarProps = {
   items: SidebarItem[];
   user: User | null;
   onLogout: () => void;
+  expand:boolean,
+   setExpand: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
-const Sidebar = ({ items, user, onLogout }: SidebarProps) => {
-  const [expand, setExpand] = useState(true);
+const Sidebar = ({ items, user, onLogout ,expand,setExpand}: SidebarProps) => {
 
   const allowedPathsByRole: Record<string, string[]> = {
     driver: ["/dashboard", "/driver"],

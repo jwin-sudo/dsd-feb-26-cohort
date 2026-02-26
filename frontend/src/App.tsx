@@ -4,7 +4,9 @@ import {
   Route,
   Routes,
   useLocation,
+  
 } from "react-router-dom";
+import {useState} from "react";
 
 import { AuthPage } from "./components/auth/AuthPage";
 import Sidebar from "./components/Sidebar";
@@ -34,14 +36,20 @@ function AppRoutes() {
     useAuth();
   const location = useLocation();
   const showSidebar = Boolean(user) && location.pathname !== "/login";
+  const [expand, setExpand] = useState(true);
 
   return (
-    <main className={showSidebar ? "flex min-h-screen" : "app-shell"}>
+    <main className={showSidebar ? "flex-1 min-h-screen" : "app-shell"}>
       {showSidebar ? (
-        <Sidebar items={sidebarItems} user={user} onLogout={logout} />
+        <Sidebar items={sidebarItems} user={user} onLogout={logout} expand={expand} setExpand={setExpand} />
       ) : null}
 
-      <section className={showSidebar ? "flex-1 p-6" : ""}>
+      <section
+  className="transition-all duration-300 p-6"
+  style={{
+    marginLeft: showSidebar ? (expand ? 256 : 80) : 0, //
+  }}
+>
 
         {/* Displays error and notice messages if they exist */}
         {/* {error ? <p className="error">{error}</p> : null}
@@ -55,7 +63,12 @@ function AppRoutes() {
               path="/login"
               element={
                 user ? (
-                  <Navigate to="/dashboard" replace />
+                  user.role == "driver" ? (
+                    <Navigate to="/driver"/>
+                  ):(
+                    <Navigate to="/customer"/>
+                  )
+                 
                 ) : (
                   <AuthPage
                     loading={loading}
