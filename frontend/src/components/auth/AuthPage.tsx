@@ -1,6 +1,8 @@
 import { useState } from "react";
 import logo from "../../assets/image.jpeg";
-import type { FormEvent } from "react";
+import driverPic from "../../assets/Garbage_Men.jpeg";
+import customerPic from "../../assets/Customer.jpeg";
+// import type { FormEvent } from "react";
 import type { Role } from "../../types/auth";
 
 type AuthPageProps = {
@@ -12,6 +14,7 @@ type AuthPageProps = {
 export function AuthPage({ loading, onLogin, onSignup }: AuthPageProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loginType, setLoginType] = useState<"driver" | "customer">("driver");
   const canSubmit = Boolean(email.trim() && password.trim());
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -20,14 +23,13 @@ export function AuthPage({ loading, onLogin, onSignup }: AuthPageProps) {
   }
 
   async function handleSignupClick() {
+    const role: Role = loginType;
     await onSignup(email, password, role);
   }
 
   const images: Record<string, string> = {
-    driver:
-      "https://cst.brightspotcdn.com/dims4/default/a6411a6/2147483647/strip/false/crop/1919x1329+0+0/resize/1486x1029!/quality/90/?url=https%3A%2F%2Fcdn.vox-cdn.com%2Fthumbor%2FoUfsgp4fwpfTmCpyY5J85aEMKr0%3D%2F129x35%3A2048x1364%2F1919x1329%2Ffilters%3Afocal%281024x682%3A1025x683%29%2Fcdn.vox-cdn.com%2Fuploads%2Fchorus_asset%2Ffile%2F21980708%2FStreets_San_garbage_truck_mayor_twitter.jpg",
-    customer:
-      "https://cdn.create.vista.com/api/media/small/22936308/stock-photo-shopping", // example customer image
+    driver: driverPic,
+    customer: customerPic, // example customer image
   };
 
   return (
@@ -98,9 +100,12 @@ export function AuthPage({ loading, onLogin, onSignup }: AuthPageProps) {
                 <button
                   type="button"
                   className="ml-1 text-sm text-blue-600 hover:underline"
-                  onClick={() =>
-                    setLoginType(loginType === "driver" ? "customer" : "driver")
-                  }
+                  onClick={() => {
+                    setLoginType(
+                      loginType === "driver" ? "customer" : "driver",
+                    );
+                    handleSignupClick();
+                  }}
                 >
                   {loginType === "driver" ? "Customer Login" : "Driver Login"}
                 </button>
