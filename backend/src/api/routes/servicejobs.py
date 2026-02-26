@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends
+from uuid import UUID
 from src.services.servicejob_service import list_service_jobs_by_location
 
 router = APIRouter()
