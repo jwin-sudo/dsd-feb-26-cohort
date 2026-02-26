@@ -1,5 +1,4 @@
 import { useState } from "react";
-// import logo from "../assets/image.jpeg";
 import logo from "../../assets/image.jpeg";
 import type { FormEvent } from "react";
 import type { Role } from "../../types/auth";
@@ -110,58 +109,6 @@ export function AuthPage({ loading, onLogin, onSignup }: AuthPageProps) {
           </form>
         </div>
       </div>
-      {/* <p className="subtitle">Email/password sign in and sign up with Supabase.</p> */}
-
-      {/* <form onSubmit={handleSubmit} className="login-form">
-        <label>
-          Email
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
-            autoComplete="email"
-            required
-          />
-        </label>
-
-        <label>
-          Password
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Your password"
-            autoComplete="current-password"
-            required
-          />
-        </label>
-        <label>
-          Role
-          <select
-            value={role}
-            onChange={(e) => setRole(e.target.value as Role)}
-            disabled={loading}
-          >
-            <option value="customer">Customer</option>
-            <option value="driver">Driver</option>
-          </select>
-        </label>
-
-        <div className="actions">
-          <button type="submit" disabled={!canSubmit || loading}>
-            {loading ? "Working..." : "Sign in"}
-          </button>
-          <button
-            type="button"
-            className="secondary"
-            disabled={!canSubmit || loading}
-            onClick={handleSignupClick}
-          >
-            Sign up
-          </button>
-        </div>
-      </form> */}
     </div>
   );
 }
