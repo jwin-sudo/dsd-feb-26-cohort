@@ -1,8 +1,9 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import List, Literal, Optional
 from datetime import date
 from src.services import garbage_routes_service
+from ..auth.dependencies import require_role
 
 router = APIRouter(
     prefix="/garbage_routes",
@@ -30,12 +31,12 @@ class GarbageRouteResponse(GarbageRouteBase):
 
 
 @router.get("/", response_model=List[GarbageRouteResponse])
-def read_garbage_routes():
+def read_garbage_routes(_user=Depends(require_role("driver"))):
     return garbage_routes_service.get_all_garbage_routes()
 
 
 @router.get("/{route_id}", response_model=GarbageRouteResponse)
-def read_garbage_route(route_id: int):
+def read_garbage_route(route_id: int, _user=Depends(require_role("driver"))):
     garbage_route = garbage_routes_service.get_garbage_route(route_id)
     if garbage_route is None:
         raise HTTPException(status_code=404, detail="Route not found")
@@ -43,12 +44,12 @@ def read_garbage_route(route_id: int):
 
 
 @router.post("/", response_model=GarbageRouteResponse)
-def create_garbage_route(route: GarbageRouteCreate):
+def create_garbage_route(route: GarbageRouteCreate, _user=Depends(require_role("driver"))):
     return garbage_routes_service.create_garbage_route(route.model_dump())
 
 
 @router.put("/{route_id}", response_model=GarbageRouteResponse)
-def update_garbage_route(route_id: int, route: GarbageRouteUpdate):
+def update_garbage_route(route_id: int, route: GarbageRouteUpdate, _user=Depends(require_role("driver"))):
     updated = garbage_routes_service.update_garbage_route(
         route_id, route.model_dump(exclude_unset=True)
     )
@@ -58,7 +59,7 @@ def update_garbage_route(route_id: int, route: GarbageRouteUpdate):
 
 
 @router.delete("/{route_id}")
-def delete_garbage_route(route_id: int):
+def delete_garbage_route(route_id: int, _user=Depends(require_role("driver"))):
     deleted = garbage_routes_service.delete_garbage_route(route_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Route not found")
