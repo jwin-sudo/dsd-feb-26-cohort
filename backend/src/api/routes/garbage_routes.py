@@ -21,7 +21,9 @@ class GarbageRouteBase(BaseModel):
     start_zipcode: Optional[str] = None
 
 class GarbageRouteCreate(GarbageRouteBase):
-    pass
+    driver_id: int
+    service_date: date
+    status: Literal["PENDING", "COMPLETED", "FAILED", "SKIPPED"] = "PENDING"
 
 class GarbageRouteUpdate(GarbageRouteBase):
     pass
@@ -37,6 +39,8 @@ def read_garbage_routes(_user=Depends(require_role("driver"))):
 
 @router.get("/{route_id}", response_model=GarbageRouteResponse)
 def read_garbage_route(route_id: int, _user=Depends(require_role("driver"))):
+    if route_id <= 0:
+        raise HTTPException(status_code=400, detail="Invalid route ID")
     garbage_route = garbage_routes_service.get_garbage_route(route_id)
     if garbage_route is None:
         raise HTTPException(status_code=404, detail="Route not found")
@@ -45,22 +49,39 @@ def read_garbage_route(route_id: int, _user=Depends(require_role("driver"))):
 
 @router.post("/", response_model=GarbageRouteResponse)
 def create_garbage_route(route: GarbageRouteCreate, _user=Depends(require_role("driver"))):
-    return garbage_routes_service.create_garbage_route(route.model_dump())
+    try:
+        return garbage_routes_service.create_garbage_route(route.model_dump())
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to create route")
 
 
 @router.put("/{route_id}", response_model=GarbageRouteResponse)
 def update_garbage_route(route_id: int, route: GarbageRouteUpdate, _user=Depends(require_role("driver"))):
-    updated = garbage_routes_service.update_garbage_route(
-        route_id, route.model_dump(exclude_unset=True)
-    )
-    if updated is None:
-        raise HTTPException(status_code=404, detail="Route not found")
-    return updated
+    if route_id <= 0:
+        raise HTTPException(status_code=400, detail="Invalid route ID")
+    try:
+        updated = garbage_routes_service.update_garbage_route(
+            route_id, route.model_dump(exclude_unset=True)
+        )
+        if updated is None:
+            raise HTTPException(status_code=404, detail="Route not found")
+        return updated
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to update route")
 
 
 @router.delete("/{route_id}")
 def delete_garbage_route(route_id: int, _user=Depends(require_role("driver"))):
-    deleted = garbage_routes_service.delete_garbage_route(route_id)
-    if not deleted:
-        raise HTTPException(status_code=404, detail="Route not found")
-    return {"message": "Route deleted successfully"}
+    if route_id <= 0:
+        raise HTTPException(status_code=400, detail="Invalid route ID")
+    try:
+        deleted = garbage_routes_service.delete_garbage_route(route_id)
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Route not found")
+        return {"message": "Route deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to delete route")

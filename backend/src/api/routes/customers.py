@@ -17,7 +17,8 @@ class CustomerBase(BaseModel):
 
 
 class CustomerCreate(CustomerBase):
-    pass
+    customer_name: str
+    billing_address: str
 
 
 class CustomerUpdate(CustomerBase):
@@ -34,6 +35,8 @@ def read_customers(_user=Depends(require_role("driver"))):
 
 @router.get("/{customer_id}")
 def read_customer(customer_id: int, _user=Depends(require_role("driver"))):
+    if customer_id <= 0:
+        raise HTTPException(status_code=400, detail="Invalid customer ID")
     customer = customers_service.get_customer(customer_id)
     if customer is None:
         raise HTTPException(status_code=404, detail="Customer not found")
@@ -42,16 +45,39 @@ def read_customer(customer_id: int, _user=Depends(require_role("driver"))):
 
 @router.post("/")
 def create_customer(customer: CustomerCreate, _user=Depends(require_role("driver"))):
-    return customers_service.create_customer(customer.model_dump())
+    try:
+        return customers_service.create_customer(customer.model_dump())
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to create customer")
 
 
 @router.put("/{customer_id}")
 def update_customer(customer_id: int, customer: CustomerUpdate, _user=Depends(require_role("driver"))):
-    return customers_service.update_customer(
-        customer_id, customer.model_dump(exclude_unset=True)
-    )
+    if customer_id <= 0:
+        raise HTTPException(status_code=400, detail="Invalid customer ID")
+    try:
+        updated = customers_service.update_customer(
+            customer_id, customer.model_dump(exclude_unset=True)
+        )
+        if updated is None:
+            raise HTTPException(status_code=404, detail="Customer not found")
+        return updated
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to update customer")
 
 
 @router.delete("/{customer_id}")
 def delete_customer(customer_id: int, _user=Depends(require_role("driver"))):
-    return customers_service.delete_customer(customer_id)
+    if customer_id <= 0:
+        raise HTTPException(status_code=400, detail="Invalid customer ID")
+    try:
+        deleted = customers_service.delete_customer(customer_id)
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Customer not found")
+        return {"message": "Customer deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to delete customer")
