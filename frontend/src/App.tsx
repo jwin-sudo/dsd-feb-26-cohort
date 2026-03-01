@@ -1,12 +1,6 @@
-import {
-  BrowserRouter,
-  Navigate,
-  Route,
-  Routes,
-  useLocation,
-
-} from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useState } from "react";
+import type { ReactNode } from "react";
 
 import { AuthPage } from "./components/auth/AuthPage";
 import Sidebar from "./components/Sidebar";
@@ -16,7 +10,7 @@ import "./App.css";
 import DriverManifest from "./pages/DriverManifest";
 import CustomerPage from "./pages/CustomerPage";
 import Dashboard from "./pages/Dashboard";
-import type { ReactNode } from "react";
+import SignupPage from "./pages/SignupPage";
 import type { User } from "./types/auth";
 
 type RoleGuardProps = {
@@ -32,16 +26,31 @@ function RoleGuard({ user, allowed, children }: RoleGuardProps) {
 }
 
 function AppRoutes() {
-  const { user, hydrating, loading, error, notice, login, signup, logout } =
-    useAuth();
+  const {
+    user,
+    hydrating,
+    loading,
+    error,
+    notice,
+    login,
+    signupWithProfile,
+    logout,
+  } = useAuth();
   const location = useLocation();
-  const showSidebar = Boolean(user) && location.pathname !== "/login";
+  const showSidebar =
+    Boolean(user) && location.pathname !== "/login" && location.pathname !== "/signup";
   const [expand, setExpand] = useState(true);
 
   return (
     <main className={showSidebar ? "flex-1 min-h-screen" : "app-shell"}>
       {showSidebar ? (
-        <Sidebar items={sidebarItems} user={user} onLogout={logout} expand={expand} setExpand={setExpand} />
+        <Sidebar
+          items={sidebarItems}
+          user={user}
+          onLogout={logout}
+          expand={expand}
+          setExpand={setExpand}
+        />
       ) : null}
 
       <section
@@ -50,11 +59,6 @@ function AppRoutes() {
           marginLeft: showSidebar ? (expand ? 256 : 80) : 0,
         }}
       >
-
-        {/* Displays error and notice messages if they exist */}
-        {/* {error ? <p className="error">{error}</p> : null}
-        {notice ? <p className="notice">{notice}</p> : null} */}
-
         {hydrating ? (
           <p>Restoring session...</p>
         ) : (
@@ -63,17 +67,37 @@ function AppRoutes() {
               path="/login"
               element={
                 user ? (
-                  user.role == "driver" ? (
+                  user.role === "driver" ? (
                     <Navigate to="/dashboard" />
                   ) : (
                     <Navigate to="/customer" />
                   )
-
                 ) : (
                   <AuthPage
                     loading={loading}
+                    error={error}
+                    notice={notice}
                     onLogin={login}
-                    onSignup={signup}
+                  />
+                )
+              }
+            />
+
+            <Route
+              path="/signup"
+              element={
+                user ? (
+                  user.role === "driver" ? (
+                    <Navigate to="/dashboard" replace />
+                  ) : (
+                    <Navigate to="/customer" replace />
+                  )
+                ) : (
+                  <SignupPage
+                    loading={loading}
+                    error={error}
+                    notice={notice}
+                    onSignup={signupWithProfile}
                   />
                 )
               }
@@ -84,7 +108,7 @@ function AppRoutes() {
               element={
                 user ? (
                   user.role === "driver" ? (
-                   <Dashboard/>
+                    <Dashboard />
                   ) : (
                     <Navigate to="/customer" replace />
                   )

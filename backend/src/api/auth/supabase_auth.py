@@ -2,24 +2,37 @@ from fastapi import HTTPException, status
 from ..supabase_client import supabase, supabase_admin
 from typing import Literal, Optional
 
+
+def _require_admin_client():
+    if supabase_admin is None:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="SUPABASE_SERVICE_ROLE_KEY is required for backend role/profile writes",
+        )
+    return supabase_admin
+
+
 def _get_role_from_users(user_id: str) -> Optional[str]:
     client = supabase_admin or supabase
-    response = (
-        client.table("users")
-        .select("role")
-        .eq("id", user_id)
-        .limit(1)
-        .execute()
-    )
+    try:
+        response = (
+            client.table("users")
+            .select("role")
+            .eq("id", user_id)
+            .limit(1)
+            .execute()
+        )
 
-    data = response.data or []
-    if not data:
+        data = response.data or []
+        if not data:
+            return None
+
+        role = data[0].get("role")
+        if isinstance(role, str) and role in {"driver", "customer"}:
+            return role
         return None
-
-    role = data[0].get("role")
-    if isinstance(role, str) and role in {"driver", "customer"}:
-        return role
-    return None
+    except Exception:
+        return None
 
 async def verify_supabase_token(token: str) -> dict:
     try:
@@ -43,7 +56,7 @@ async def verify_supabase_token(token: str) -> dict:
         )
 
 def upsert_user_role(user_id: str, role: Literal["driver", "customer"]) -> dict:
-    client = supabase_admin or supabase
+    client = _require_admin_client()
     response = (
         client.table("users")
         .upsert({"id": user_id, "role": role}, on_conflict="id")

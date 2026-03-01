@@ -10,9 +10,9 @@ erDiagram
 
     SERVICE_LOCATIONS {
         UUID location_id PK
-        UUID route_id FK
+        UUID route_id FK "nullable"
         UUID customer_id FK
-        int8 job_id FK
+        int8 job_id FK "nullable"
         string street_address
         str city
         str zipcode
