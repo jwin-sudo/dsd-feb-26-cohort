@@ -89,6 +89,8 @@ class UserRole(str, Enum):
 class User(SQLModel, table=True):
     __tablename__ = "users"
     id: int = Field(primary_key=True, index=True, foreign_key="auth.users.id")
+    driver_id: int = Field(foreign_key="drivers.driver_id", index=True)
+    customer_id: int = Field(foreign_key="customers.customer_id", index=True)
     role: Optional[UserRole] = Field(default=None, index=True)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 

@@ -59,7 +59,10 @@ erDiagram
 
     USERS {
         int8 id PK
+        int8 driver_id FK
+        int8 customer_id FK
         string role "driver|customer"
+        datetime created_at
     }
 
     %% Relationships
