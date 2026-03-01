@@ -43,7 +43,7 @@ class Location(SQLModel, table=True):
     location_id: int = Field(primary_key=True, index=True)
     route_id: int = Field(foreign_key="routes.route_id", index=True)
     customer_id: int = Field(foreign_key="customers.customer_id", index=True)
-    job_id: int = Field(foreign_key="profiles.id", index=True)
+    job_id: int = Field(foreign_key="service_jobs.job_id", index=True)
     street_address : str
     city : str
     zipcode : str
@@ -68,7 +68,7 @@ class Routes(SQLModel, table=True):
 class ServiceJob(SQLModel, table=True):
     __tablename__ = "service_jobs"
 
-    job_id: int = Field(primary_key=True, index=True)
+    job_id: Optional[int] = Field(default=None, primary_key=True, index=True)
     location_id: int = Field(foreign_key="service_locations.location_id",index=True)
     route_id: Optional[int] = Field(
         default=None,
@@ -97,7 +97,7 @@ class Service_Request(SQLModel, table=True):
 
     request_id: int = Field(primary_key=True, index=True)
     location_id: int = Field(foreign_key="service_locations.location_id", index=True)
-    job_id: int = Field(foreign_key="profiles.id", index=True)
+    job_id: int = Field(foreign_key="service_jobs.job_id", index=True)
     request_type: RequestType = Field(index=True)
     requested_for_date: datetime = Field(index=True)
     created_at: datetime
