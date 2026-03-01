@@ -43,6 +43,8 @@ def update_request(request_id: int, data: dict):
         .eq("request_id", request_id)
         .execute()
     )
+    if response.data and len(response.data) > 0:
+        return response.data[0]
     return None
 
 

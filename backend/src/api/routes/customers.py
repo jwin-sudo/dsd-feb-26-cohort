@@ -59,7 +59,7 @@ def update_customer(customer_id: int, customer: CustomerUpdate, _user=Depends(re
         updated = customers_service.update_customer(
             customer_id, customer.model_dump(exclude_unset=True)
         )
-        if updated is None:
+        if updated is None or []:
             raise HTTPException(status_code=404, detail="Customer not found")
         return updated
     except HTTPException:

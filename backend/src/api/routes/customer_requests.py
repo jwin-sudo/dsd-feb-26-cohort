@@ -67,11 +67,14 @@ def update_request(request_id: int, request: RequestUpdate, _user=Depends(requir
     if request_id <= 0:
         raise HTTPException(status_code=400, detail="Invalid request ID")
     try:
+        existing_request = customer_requests_service.get_request(request_id)
+        if existing_request is None:
+            raise HTTPException(status_code=404, detail="Request not found")  
         updated = customer_requests_service.update_request(
             request_id, request.model_dump(exclude_unset=True)
         )
         if updated is None:
-            raise HTTPException(status_code=404, detail="Request not found")
+            updated = customer_requests_service.get_request(request_id)
         return updated
     except HTTPException:
         raise
