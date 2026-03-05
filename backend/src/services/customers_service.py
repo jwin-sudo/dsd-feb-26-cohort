@@ -14,10 +14,11 @@ def get_customer(customer_id: int):
         supabase.table(TABLE)
         .select("*")
         .eq("customer_id", customer_id)
-        .single()
+        .limit(1)
         .execute()
     )
-    return response.data
+    data = response.data or []
+    return data[0] if data else None
 
 
 def create_customer(data: dict):
