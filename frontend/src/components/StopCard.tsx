@@ -58,8 +58,8 @@ const StopCard = ({ stop }: StopCardProps) => {
             variant="ghost"
             className={`cursor-pointer rounded-lg font-semibold ${
               statusAction === "COMPLETED"
-                ? "bg-green-700 text-white hover:bg-green-700"
-                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                ? "bg-green-700 text-white hover:bg-green-700 hover:text-white"
+                : "bg-green-100 text-green-700 hover:bg-green-200"
             }`}
             onClick={() => setStatusAction("COMPLETED")}
           >
@@ -70,9 +70,9 @@ const StopCard = ({ stop }: StopCardProps) => {
             variant="ghost"
             className={`cursor-pointer rounded-lg font-semibold ${
               statusAction === "FAILED"
-                ? "bg-red-600 text-white hover:bg-red-600"
-                : "bg-red-100 text-red-700 hover:bg-red-200"
-            }`}
+                ? "bg-red-600 text-white hover:bg-red-600 hover:text-white"
+                : "bg-red-100 text-red-700 hover:bg-red-200 "
+            }`} 
             onClick={() => setStatusAction("FAILED")}
           >
             Unable to service
@@ -85,14 +85,14 @@ const StopCard = ({ stop }: StopCardProps) => {
             onValueChange={setReason}
             disabled={statusAction !== "FAILED"}
           >
-            <SelectTrigger className="w-full">
+            <SelectTrigger className="w-full cursor-pointer">
               <SelectValue placeholder="Reason for not serving" />
             </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="blocked_access">Blocked access</SelectItem>
-              <SelectItem value="contaminated_bin">Contaminated bin</SelectItem>
-              <SelectItem value="bin_not_out">Bin not out</SelectItem>
-              <SelectItem value="safety_issue">Safety issue</SelectItem>
+            <SelectContent position="popper" sideOffset={6} align="start">
+              <SelectItem className="cursor-pointer" value="blocked_access">Blocked access</SelectItem>
+              <SelectItem className="cursor-pointer" value="contaminated_bin">Contaminated bin</SelectItem>
+              <SelectItem className="cursor-pointer" value="bin_not_out">Bin not out</SelectItem>
+              <SelectItem className="cursor-pointer" value="safety_issue">Safety issue</SelectItem>
             </SelectContent>
           </Select>
 
@@ -108,7 +108,7 @@ const StopCard = ({ stop }: StopCardProps) => {
           type="button"
           onClick={handleSubmit}
           disabled={isSubmitDisabled}
-          className="w-full cursor-pointer rounded-lg bg-gray-300 font-bold text-white disabled:cursor-not-allowed disabled:opacity-70"
+          className="w-full cursor-pointer rounded-lg bg-black font-bold text-white disabled:cursor-not-allowed disabled:opacity-70"
         >
           SUBMIT
         </Button>
