@@ -1,40 +1,36 @@
-import { useState } from "react";
+import { useState, type SyntheticEvent } from "react";
+import { Link } from "react-router-dom";
+
 import logo from "../../assets/image.jpeg";
 import driverPic from "../../assets/Garbage_Men.jpeg";
 import customerPic from "../../assets/Customer.jpeg";
-// import type { FormEvent } from "react";
 import type { Role } from "../../types/auth";
 
 type AuthPageProps = {
   loading: boolean;
-  onLogin: (email: string, password: string) => Promise<void>;
-  onSignup: (email: string, password: string, role: Role) => Promise<void>;
+  error: string | null;
+  notice: string | null;
+  onLogin: (email: string, password: string, loginType: Role) => Promise<void>;
 };
 
-export function AuthPage({ loading, onLogin, onSignup }: AuthPageProps) {
+export function AuthPage({ loading, error, notice, onLogin }: AuthPageProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loginType, setLoginType] = useState<"driver" | "customer">("driver");
   const canSubmit = Boolean(email.trim() && password.trim());
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
-    await onLogin(email, password);
+    await onLogin(email, password, loginType);
   }
 
-  async function handleSignupClick() {
-    const role: Role = loginType;
-    await onSignup(email, password, role);
-  }
-
-  const images: Record<string, string> = {
+  const images: Record<"driver" | "customer", string> = {
     driver: driverPic,
-    customer: customerPic, // example customer image
+    customer: customerPic,
   };
 
   return (
     <div className="min-h-screen flex">
-      {/* Left Side - Image */}
       <div className="hidden md:flex md:w-[65%]">
         <img
           src={images[loginType]}
@@ -66,7 +62,7 @@ export function AuthPage({ loading, onLogin, onSignup }: AuthPageProps) {
               />
 
               <div className="mt-6 mb-5">
-                <label className="mb-2  block text-sm font-medium text-gray-700">
+                <label className="mb-2 block text-sm font-medium text-gray-700">
                   Password
                 </label>
                 <input
@@ -78,37 +74,34 @@ export function AuthPage({ loading, onLogin, onSignup }: AuthPageProps) {
                   required
                   className="w-full px-4 py-2 border rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
-
-                <div className="flex justify-end mt-3">
-                  <a href="#" className="text-sm text-blue-600 hover:underline">
-                    Forgot Password?
-                  </a>
-                </div>
               </div>
+
+              {error ? <p className="text-sm text-red-600 mb-3">{error}</p> : null}
+              {notice ? <p className="text-sm text-blue-700 mb-3">{notice}</p> : null}
 
               <button
                 type="submit"
                 disabled={!canSubmit || loading}
-                className="w-full bg-[#005B17] text-white py-2 rounded-[10px] hover:bg-green-700 transition duration-200 mt-4"
+                className="w-full bg-[#005B17] text-white py-2 rounded-[10px] hover:bg-green-700 transition duration-200 mt-2"
               >
                 {loading ? "Working..." : "Sign in"}
               </button>
+
+              <button
+                type="button"
+                className="w-full border border-slate-300 py-2 rounded-[10px] hover:bg-slate-100 transition duration-200 mt-3"
+                onClick={() =>
+                  setLoginType(loginType === "driver" ? "customer" : "driver")
+                }
+              >
+                Switch to {loginType === "driver" ? "Customer" : "Driver"} Login
+              </button>
+
               <div className="flex justify-center mt-6">
-                <p className="text-sm text-gray-500">
-                  {loginType === "driver" ? "Not a Driver?" : "Not a Customer?"}
-                </p>
-                <button
-                  type="button"
-                  className="ml-1 text-sm text-blue-600 hover:underline"
-                  onClick={() => {
-                    setLoginType(
-                      loginType === "driver" ? "customer" : "driver",
-                    );
-                    handleSignupClick();
-                  }}
-                >
-                  {loginType === "driver" ? "Customer Login" : "Driver Login"}
-                </button>
+                <p className="text-sm text-gray-500">New here?</p>
+                <Link to="/signup" className="ml-1 text-sm text-blue-600 hover:underline">
+                  Create account
+                </Link>
               </div>
             </div>
           </form>
