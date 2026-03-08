@@ -47,7 +47,7 @@
                         ) : null}
                         {currItems.map((row) => (
                             <tr key={row.job_id}>
-                                <td className="p-2">{row.job_id}</td>
+                                <td className="p-2">{row.sequence_order ?? row.job_id}</td>
                                 <td className="p-2">{row.address?.street_address ?? "N/A"}</td>
                                 <td className="p-2">{row.customer_name ?? "N/A"}</td>
                                 <td className="p-2">{row.job_source}</td>
@@ -103,3 +103,4 @@
     }
 
     export default Manifest;
+

@@ -5,6 +5,7 @@ import http from "./http";
 export type DriverManifestJob = {
   job_id: number;
   location_id: number;
+  sequence_order?: number | null;
   status: "PENDING" | "COMPLETED" | "FAILED" | "SKIPPED";
   job_source: "SCHEDULED" | "EXTRA_REQUEST";
   completed_at?: string | null;
@@ -31,6 +32,8 @@ export type DriverManifestRoute = {
 export type DriverManifestResponse = {
   service_date: string;
   has_jobs: boolean;
+  skip_count?: number;
+  extra_count?: number;
   route: DriverManifestRoute | null;
   jobs: DriverManifestJob[];
   driver: {

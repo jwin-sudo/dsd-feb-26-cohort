@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import RouteDetails from "../components/RouteDetails";
@@ -55,12 +55,8 @@ const DriverManifest = () => {
   }, [serviceDate]);
 
   const jobs = manifest?.jobs ?? [];
-  const showGenerateButton = useMemo(
-    () => !loading && !manifest?.has_jobs,
-    [loading, manifest?.has_jobs],
-  );
-  const skips = jobs.filter((job) => job.status === "SKIPPED").length;
-  const extras = jobs.filter((job) => job.job_source === "EXTRA_REQUEST").length;
+  const skips = manifest?.skip_count ?? 0;
+  const extras = manifest?.extra_count ?? 0;
 
   return (
     <div>
@@ -76,11 +72,13 @@ const DriverManifest = () => {
             onChange={(event) => setServiceDate(event.target.value)}
           />
         </label>
-        {showGenerateButton ? (
-          <Button type="button" onClick={onGenerateRoute} disabled={generating}>
-            {generating ? "Generating..." : "Generate Route"}
-          </Button>
-        ) : null}
+        <Button type="button" onClick={onGenerateRoute} disabled={generating || loading}>
+          {generating
+            ? "Generating..."
+            : manifest?.has_jobs
+              ? "Regenerate Route"
+              : "Generate Route"}
+        </Button>
       </div>
 
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
