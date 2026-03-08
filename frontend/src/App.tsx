@@ -9,6 +9,8 @@ import {
 import { useState } from "react";
 
 import { AuthPage } from "./components/auth/AuthPage";
+import ForgotPassPage from "./components/auth/ForgotPassPage";
+import ResetPassPage from "./components/auth/ResetPassPage";
 import Sidebar from "./components/Sidebar";
 import { sidebarItems } from "./components/sidebarItems";
 import { useAuth } from "./hooks/useAuth";
@@ -35,7 +37,8 @@ function AppRoutes() {
   const { user, hydrating, loading, login, signup, logout } =
     useAuth();
   const location = useLocation();
-  const showSidebar = Boolean(user) && location.pathname !== "/login";
+  const publicOnlyPaths = ["/login", "/forgot-password", "/reset-password"];
+  const showSidebar = Boolean(user) && !publicOnlyPaths.includes(location.pathname);
   const [expand, setExpand] = useState(true);
 
   return (
@@ -76,6 +79,19 @@ function AppRoutes() {
                     onSignup={signup}
                   />
                 )
+              }
+            />
+            <Route
+              path="/forgot-password"
+              element={
+                user ? <Navigate to={user.role === "driver" ? "/dashboard" : "/customer"} replace /> : <ForgotPassPage />
+              }
+            />
+
+            <Route
+              path="/reset-password"
+              element={
+                user ? <Navigate to={user.role === "driver" ? "/dashboard" : "/customer"} replace /> : <ResetPassPage />
               }
             />
 

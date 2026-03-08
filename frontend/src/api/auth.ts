@@ -39,6 +39,11 @@ async function supabaseAuthRequest(
   return { response, data };
 }
 
+type SupabaseErrorResponse = {
+  error_description?: string;
+  msg?: string;
+};
+
 async function authenticateWithPassword(
   path: AuthPath,
   email: string,
@@ -83,6 +88,62 @@ export async function signupWithEmailPassword(
     false,
     role,
   );
+}
+
+export async function requestPasswordReset(
+  email: string,
+  redirectTo: string,
+): Promise<void> {
+  const { url, anonKey } = assertSupabaseEnv();
+
+  const response = await fetch(`${url}/auth/v1/recover`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: anonKey,
+    },
+    body: JSON.stringify({
+      email,
+      redirect_to: redirectTo,
+    }),
+  });
+
+  if (!response.ok) {
+    let data: SupabaseErrorResponse | null = null;
+    try {
+      data = (await response.json()) as SupabaseErrorResponse;
+    } catch {
+      data = null;
+    }
+    throw new Error(data?.error_description || data?.msg || "Failed to send reset email");
+  }
+}
+
+export async function updatePassword(
+  accessToken: string,
+  password: string,
+): Promise<void> {
+  const { url, anonKey } = assertSupabaseEnv();
+
+  const response = await fetch(`${url}/auth/v1/user`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: anonKey,
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({ password }),
+  });
+
+  if (!response.ok) {
+    let data: SupabaseErrorResponse | null = null;
+    try {
+      data = (await response.json()) as SupabaseErrorResponse;
+    } catch {
+      data = null;
+    }
+    throw new Error(data?.error_description || data?.msg || "Failed to reset password");
+  }
 }
 
 export async function registerCurrentUserRole(role: Role): Promise<void> {

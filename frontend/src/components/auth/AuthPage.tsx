@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { Link } from "react-router-dom";
 import logo from "../../assets/image.jpeg";
 import driverPic from "../../assets/Garbage_Men.jpeg";
 import customerPic from "../../assets/Customer.jpeg";
@@ -79,9 +80,9 @@ export function AuthPage({ loading, onLogin, onSignup }: AuthPageProps) {
                 />
 
                 <div className="flex justify-end mt-3">
-                  <a href="#" className="text-sm text-blue-600 hover:underline">
+                  <Link to="/forgot-password" className="text-sm text-blue-600 hover:underline">
                     Forgot Password?
-                  </a>
+                  </Link>
                 </div>
               </div>
 
