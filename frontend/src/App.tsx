@@ -38,6 +38,7 @@ function AppRoutes() {
     loading,
     error,
     notice,
+    checkEmailExists,
     login,
     signupWithProfile,
     logout,
@@ -54,7 +55,13 @@ function AppRoutes() {
   const loginElement = user ? (
     <Navigate to={roleHomePath(user.role)} />
   ) : (
-    <AuthPage loading={loading} error={error} notice={notice} onLogin={login} />
+    <AuthPage
+      loading={loading}
+      error={error}
+      notice={notice}
+      onCheckEmail={checkEmailExists}
+      onLogin={login}
+    />
   );
 
   const signupElement = user ? (

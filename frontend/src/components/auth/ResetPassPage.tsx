@@ -1,19 +1,16 @@
 import { useMemo, useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import logo from "../../assets/image.jpeg";
-import { updatePassword } from "../../api/auth";
-
-function parseHashParams(hash: string): URLSearchParams {
-  const normalized = hash.startsWith("#") ? hash.slice(1) : hash;
-  return new URLSearchParams(normalized);
-}
+import { resetPasswordDirect } from "../../api/auth";
 
 const ResetPassPage = () => {
   const navigate = useNavigate();
-  const hashParams = useMemo(() => parseHashParams(window.location.hash), []);
-  const accessToken = hashParams.get("access_token");
-  const type = hashParams.get("type");
-  const isRecoveryLink = Boolean(accessToken) && type === "recovery";
+  const [searchParams] = useSearchParams();
+  const email = useMemo(
+    () => searchParams.get("email")?.trim().toLowerCase() ?? "",
+    [searchParams],
+  );
+  const hasEmail = Boolean(email);
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -23,8 +20,8 @@ const ResetPassPage = () => {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!isRecoveryLink || !accessToken) {
-      setError("Invalid or expired reset link. Request a new one.");
+    if (!hasEmail) {
+      setError("Missing email. Start again from forgot password page.");
       return;
     }
     if (!password.trim() || !confirmPassword.trim()) {
@@ -45,7 +42,7 @@ const ResetPassPage = () => {
     setSuccess(null);
 
     try {
-      await updatePassword(accessToken, password);
+      await resetPasswordDirect(email, password);
       setSuccess("Password updated successfully. Redirecting to login...");
       setTimeout(() => navigate("/login"), 1200);
     } catch (e) {
@@ -68,10 +65,10 @@ const ResetPassPage = () => {
           Set your new password below.
         </p>
 
-        {!isRecoveryLink ? (
+        {!hasEmail ? (
           <div className="space-y-3">
             <p className="text-sm text-red-600">
-              Invalid or expired reset link. Please request a new password reset email.
+              Missing email. Please return to forgot password and continue again.
             </p>
             <Link to="/forgot-password" className="text-blue-600 hover:underline text-sm">
               Go to forgot password
@@ -79,6 +76,16 @@ const ResetPassPage = () => {
           </div>
         ) : (
           <form className="space-y-4" onSubmit={handleSubmit}>
+            <div className="flex flex-col">
+              <label className="mb-2">Email</label>
+              <input
+                type="email"
+                value={email}
+                disabled
+                className="w-full px-4 py-2 border rounded-[10px] bg-gray-100 text-gray-600"
+              />
+            </div>
+
             <div className="flex flex-col">
               <label className="mb-2">New Password</label>
               <input

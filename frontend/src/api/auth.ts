@@ -119,6 +119,15 @@ export async function requestPasswordReset(
   }
 }
 
+export async function checkEmailExists(email: string): Promise<boolean> {
+  const response = await http.post<{ exists: boolean }>("/auth/check-email", { email });
+  return Boolean(response.data.exists);
+}
+
+export async function resetPasswordDirect(email: string, password: string): Promise<void> {
+  await http.post("/auth/password/reset-direct", { email, password });
+}
+
 export async function updatePassword(
   accessToken: string,
   password: string,

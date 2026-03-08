@@ -1,34 +1,22 @@
 import { useState, type FormEvent } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import logo from "../../assets/image.jpeg";
-import { requestPasswordReset } from "../../api/auth";
 
 const ForgotPassPage = () => {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!email.trim()) {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) {
       setError("Email is required.");
       return;
     }
 
-    setLoading(true);
     setError(null);
-    setSuccess(null);
-
-    try {
-      const redirectTo = `${window.location.origin}/reset-password`;
-      await requestPasswordReset(email.trim(), redirectTo);
-      setSuccess("If an account exists for this email, a reset link has been sent.");
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to send reset link");
-    } finally {
-      setLoading(false);
-    }
+    navigate(`/reset-password?email=${encodeURIComponent(normalizedEmail)}`);
   }
 
   return (
@@ -41,7 +29,7 @@ const ForgotPassPage = () => {
 
         <h2 className="text-3xl font-medium mb-2">Forgot Password</h2>
         <p className="text-sm text-gray-600 mb-6">
-          Enter your email and we will send you a password reset link.
+          Enter your email to continue to reset password.
         </p>
 
         <form className="space-y-4" onSubmit={handleSubmit}>
@@ -59,14 +47,13 @@ const ForgotPassPage = () => {
           </div>
 
           {error ? <p className="text-sm text-red-600">{error}</p> : null}
-          {success ? <p className="text-sm text-green-700">{success}</p> : null}
 
           <button
             type="submit"
-            disabled={loading || !email.trim()}
+            disabled={!email.trim()}
             className="w-full bg-[#005B17] text-white py-2 rounded-[10px] hover:bg-green-700 transition duration-200"
           >
-            {loading ? "Sending..." : "Send Reset Link"}
+            Continue
           </button>
         </form>
 
