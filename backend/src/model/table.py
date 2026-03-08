@@ -10,23 +10,28 @@ class RequestType(str, Enum):
     SKIP = "SKIP"
     EXTRA = "EXTRA"
 
+
 class RequestStatus(str, Enum):
     PENDING = "PENDING"
     PROCESSED = "PROCESSED"
+
 
 class UserRole(str, Enum):
     DRIVER = "driver"
     CUSTOMER = "customer"
 
+
 class JobSource(str, Enum):
     SCHEDULED = "SCHEDULED"
     EXTRA_REQUEST = "EXTRA_REQUEST"
+
 
 class JobStatus(str, Enum):
     PENDING = "PENDING"
     COMPLETED = "COMPLETED"
     FAILED = "FAILED"
     SKIPPED = "SKIPPED"
+
 
 class Customer(SQLModel, table=True):
     __tablename__ = "customers"
@@ -35,19 +40,31 @@ class Customer(SQLModel, table=True):
     user_id: int = Field(foreign_key="users.id", unique=True, index=True)
     customer_name: str
     billing_address: str
-    phone : str
+    phone: str
+
 
 class Location(SQLModel, table=True):
     __tablename__ = "service_locations"
 
     location_id: int = Field(primary_key=True, index=True)
-    route_id: int = Field(foreign_key="routes.route_id", index=True)
+    route_id: Optional[int] = Field(
+        default=None,
+        foreign_key="routes.route_id",
+        index=True,
+        nullable=True,
+    )
     customer_id: int = Field(foreign_key="customers.customer_id", index=True)
-    job_id: int = Field(foreign_key="service_jobs.job_id", index=True)
-    street_address : str
-    city : str
-    zipcode : str
-    state : str
+    job_id: Optional[int] = Field(
+        default=None,
+        foreign_key="service_jobs.job_id",
+        index=True,
+        nullable=True,
+    )
+    street_address: str
+    city: str
+    zipcode: str
+    state: str
+
 
 class Driver(SQLModel, table=True):
     __tablename__ = "drivers"
@@ -61,9 +78,10 @@ class Routes(SQLModel, table=True):
 
     route_id: int = Field(primary_key=True, index=True)
     driver_id: int = Field(foreign_key="drivers.driver_id", index=True)
-    service_date : datetime
-    start_location_name : str
-    status : str
+    service_date: datetime
+    start_location_name: str
+    status: str
+
 
 class ServiceJob(SQLModel, table=True):
     __tablename__ = "service_jobs"
@@ -82,9 +100,7 @@ class ServiceJob(SQLModel, table=True):
     failure_reason: Optional[str] = Field(default=None, nullable=True)
     proof_of_service_photo: Optional[str] = Field(default=None, nullable=True)
 
-class UserRole(str, Enum):
-    DRIVER = "driver"
-    CUSTOMER = "customer"
+
 
 class User(SQLModel, table=True):
     __tablename__ = "users"
@@ -93,6 +109,7 @@ class User(SQLModel, table=True):
     customer_id: int = Field(foreign_key="customers.customer_id", index=True)
     role: Optional[UserRole] = Field(default=None, index=True)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 
 class Service_Request(SQLModel, table=True):
     __tablename__ = "requests"

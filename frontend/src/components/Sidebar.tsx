@@ -10,13 +10,11 @@ type SidebarProps = {
   items: SidebarItem[];
   user: User | null;
   onLogout: () => void;
-  expand:boolean,
-   setExpand: React.Dispatch<React.SetStateAction<boolean>>;
+  expand: boolean;
+  setExpand: (value: boolean | ((prev: boolean) => boolean)) => void;
 };
 
-const Sidebar = ({ items, user, onLogout ,expand,setExpand}: SidebarProps) => {
-  const location = useLocation();
-
+const Sidebar = ({ items, user, onLogout, expand, setExpand }: SidebarProps) => {
   const allowedPathsByRole: Record<string, string[]> = {
     driver: ["/dashboard", "/driver"],
     customer: ["/dashboard"],
