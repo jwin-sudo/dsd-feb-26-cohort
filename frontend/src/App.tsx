@@ -44,7 +44,11 @@ function AppRoutes() {
   } = useAuth();
   const location = useLocation();
   const showSidebar =
-    Boolean(user) && location.pathname !== "/login" && location.pathname !== "/signup";
+    Boolean(user) &&
+    location.pathname !== "/login" &&
+    location.pathname !== "/signup" &&
+    location.pathname !== "/forgot-password" &&
+    location.pathname !== "/reset-password";
   const [expand, setExpand] = useState(true);
 
   const loginElement = user ? (
@@ -94,6 +98,18 @@ function AppRoutes() {
           <Routes>
             <Route path="/login" element={loginElement} />
             <Route path="/signup" element={signupElement} />
+            <Route
+              path="/forgot-password"
+              element={
+                user ? <Navigate to={roleHomePath(user.role)} replace /> : <ForgotPassPage />
+              }
+            />
+            <Route
+              path="/reset-password"
+              element={
+                user ? <Navigate to={roleHomePath(user.role)} replace /> : <ResetPassPage />
+              }
+            />
             <Route path="/dashboard" element={dashboardElement} />
 
             <Route

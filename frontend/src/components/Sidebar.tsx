@@ -15,6 +15,8 @@ type SidebarProps = {
 };
 
 const Sidebar = ({ items, user, onLogout, expand, setExpand }: SidebarProps) => {
+  const location = useLocation();
+
   const allowedPathsByRole: Record<string, string[]> = {
     driver: ["/dashboard", "/driver"],
     customer: ["/dashboard"],

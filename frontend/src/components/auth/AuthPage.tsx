@@ -74,6 +74,12 @@ export function AuthPage({ loading, error, notice, onLogin }: AuthPageProps) {
                   required
                   className="w-full px-4 py-2 border rounded-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
+
+                <div className="flex justify-end mt-3">
+                  <Link to="/forgot-password" className="text-sm text-blue-600 hover:underline">
+                    Forgot Password?
+                  </Link>
+                </div>
               </div>
 
               {error ? <p className="text-sm text-red-600 mb-3">{error}</p> : null}
