@@ -3,6 +3,8 @@ import { useState } from "react";
 import type { ReactNode } from "react";
 
 import { AuthPage } from "./components/auth/AuthPage";
+import ForgotPassPage from "./components/auth/ForgotPassPage";
+import ResetPassPage from "./components/auth/ResetPassPage";
 import Sidebar from "./components/Sidebar";
 import { sidebarItems } from "./components/sidebarItems";
 import { useAuth } from "./hooks/useAuth";
@@ -36,19 +38,30 @@ function AppRoutes() {
     loading,
     error,
     notice,
+    checkEmailExists,
     login,
     signupWithProfile,
     logout,
   } = useAuth();
   const location = useLocation();
   const showSidebar =
-    Boolean(user) && location.pathname !== "/login" && location.pathname !== "/signup";
+    Boolean(user) &&
+    location.pathname !== "/login" &&
+    location.pathname !== "/signup" &&
+    location.pathname !== "/forgot-password" &&
+    location.pathname !== "/reset-password";
   const [expand, setExpand] = useState(true);
 
   const loginElement = user ? (
     <Navigate to={roleHomePath(user.role)} />
   ) : (
-    <AuthPage loading={loading} error={error} notice={notice} onLogin={login} />
+    <AuthPage
+      loading={loading}
+      error={error}
+      notice={notice}
+      onCheckEmail={checkEmailExists}
+      onLogin={login}
+    />
   );
 
   const signupElement = user ? (
@@ -92,6 +105,18 @@ function AppRoutes() {
           <Routes>
             <Route path="/login" element={loginElement} />
             <Route path="/signup" element={signupElement} />
+            <Route
+              path="/forgot-password"
+              element={
+                user ? <Navigate to={roleHomePath(user.role)} replace /> : <ForgotPassPage />
+              }
+            />
+            <Route
+              path="/reset-password"
+              element={
+                user ? <Navigate to={roleHomePath(user.role)} replace /> : <ResetPassPage />
+              }
+            />
             <Route path="/dashboard" element={dashboardElement} />
 
             <Route
