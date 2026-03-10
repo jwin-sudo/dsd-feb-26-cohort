@@ -4,7 +4,7 @@ from datetime import date, timedelta
 
 from fastapi import HTTPException, status
 
-from api.supabase_client import supabase, supabase_admin
+from src.api.supabase_client import supabase, supabase_admin
 
 
 def _client():
