@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { isAxiosError } from "axios";
 
 import {
+  checkEmailExists as checkAuthEmailExists,
   clearStoredAccessToken,
   fetchCurrentUser,
   getStoredAccessToken,
@@ -40,6 +41,7 @@ type UseAuthResult = {
   loading: boolean;
   error: string | null;
   notice: string | null;
+  checkEmailExists: (email: string) => Promise<boolean>;
   login: (email: string, password: string, loginType: Role) => Promise<void>;
   signupWithProfile: (payload: SignupDetails) => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -147,6 +149,10 @@ export function useAuth(): UseAuthResult {
 
       await completePendingSignupProfile(currentUser, email);
     }, "Login failed");
+  }
+
+  async function checkEmailExists(email: string): Promise<boolean> {
+    return checkAuthEmailExists(email.trim().toLowerCase());
   }
 
   async function signupWithProfile(payload: SignupDetails) {
@@ -260,6 +266,7 @@ export function useAuth(): UseAuthResult {
     loading,
     error,
     notice,
+    checkEmailExists,
     login,
     signupWithProfile,
     refreshUser,
