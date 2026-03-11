@@ -81,7 +81,7 @@ function AppRoutes() {
       ) : null}
 
       <section
-        className="transition-all duration-300 p-6"
+        className="transition-all duration-300"
         style={{
           marginLeft: showSidebar ? (expand ? 256 : 80) : 0,
         }}
