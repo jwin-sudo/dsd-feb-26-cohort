@@ -132,6 +132,7 @@ def get_addresses_from_requests(requested_for_date: str) -> list[dict]:
         supabase.table("customer_requests")
         .select("customer_id, request_type, requested_for_date, customers(customer_id, customer_name, billing_address)")
         .eq("request_type", "EXTRA")
+        .eq("status", "PENDING")
         .eq("requested_for_date", requested_for_date)
         .execute()
     )
@@ -150,8 +151,10 @@ def get_addresses_from_requests(requested_for_date: str) -> list[dict]:
     return results
 
 
-def optimize_route_from_requests(origin: str, requested_for_date: str) -> dict:
-    """Build an optimized route for the driver using EXTRA requests for the given date."""
+DRIVER_ORIGIN = "7740 Ellington Drive, Dallas, TX 75241"
+
+
+def optimize_route_from_requests(requested_for_date: str) -> dict:
     extra_requests = get_addresses_from_requests(requested_for_date)
 
     if not extra_requests:
@@ -161,4 +164,4 @@ def optimize_route_from_requests(origin: str, requested_for_date: str) -> dict:
         }
 
     addresses = [r["billing_address"] for r in extra_requests]
-    return optimize_distance(origin=origin, destinations=addresses)
+    return optimize_distance(origin=DRIVER_ORIGIN, destinations=addresses)

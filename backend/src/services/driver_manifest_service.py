@@ -36,6 +36,7 @@ def _get_route_for_day(driver_id: int, service_date: date) -> dict | None:
         .select("*")
         .eq("driver_id", driver_id)
         .eq("service_date", service_date.isoformat())
+        .order("route_id", desc=True)  # ← Get latest
         .limit(1)
         .execute()
     )
@@ -425,3 +426,21 @@ def generate_driver_route_for_date(user_id: str, service_date: date) -> dict:
 
     _client().table("service_jobs").insert(payload).execute()
     return get_driver_manifest_for_date(user_id, service_date)
+
+
+def get_jobs_for_date(user_id: str, service_date: date) -> dict:
+    driver = _get_driver_by_user_id(user_id)
+    route = _get_route_for_day(driver["driver_id"], service_date)
+    if route is None:
+        return {"service_date": service_date.isoformat(), "driver": driver, "jobs": []}
+
+    jobs = _get_jobs_by_route(route["route_id"])
+    enriched = _build_enriched_jobs(jobs)
+    # Sort by sequence_order, no optimization call
+    enriched.sort(key=lambda j: (j.get("sequence_order") is None, j.get("sequence_order") or 0))
+    return {
+        "service_date": service_date.isoformat(),
+        "driver": driver,
+        "route": route,
+        "jobs": enriched,
+    }

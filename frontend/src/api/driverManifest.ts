@@ -94,3 +94,21 @@ export async function fetchDriverManifest(
   inFlightByDate.set(serviceDate, request);
   return request;
 }
+
+export async function fetchManifestJobs(serviceDate: string): Promise<DriverManifestResponse> {
+  const response = await http.get<DriverManifestResponse>("/driver/manifest/jobs", {
+    params: { service_date: serviceDate },
+  });
+  response.data.jobs.sort(
+    (a, b) => (a.sequence_order ?? 9999) - (b.sequence_order ?? 9999)
+  );
+  return response.data;
+}
+
+export async function generateDriverManifest(serviceDate: string): Promise<DriverManifestResponse> {
+  const response = await http.post<DriverManifestResponse>("/driver/manifest/generate", null, {
+    params: { service_date: serviceDate },
+  });
+  try { sessionStorage.removeItem(`driver_manifest:${serviceDate}`); } catch { /* ignore */ }
+  return response.data;
+}
