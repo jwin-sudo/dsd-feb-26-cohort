@@ -20,7 +20,7 @@ const RouteListCard = ({ stops, currentStopLocationId, onStopSelect }: RouteList
         </div>
 
         <div className="max-h-130 space-y-2 overflow-y-auto pr-1">
-          {stops.map((stop) => {
+          {stops.map((stop, index) => {
             const isCurrent = stop.location_id === currentStopLocationId;
             const isExtraPickup = stop.is_extra_pickup;
 
@@ -35,7 +35,7 @@ const RouteListCard = ({ stops, currentStopLocationId, onStopSelect }: RouteList
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className={`font-semibold ${isCurrent ? "text-green-700" : ""}`}>
-                      {stop.sequence_order}. {stop.address}
+                      {index + 1}. {stop.address}
                     </p>
                     <p className="text-sm">
                       {stop.city}, {stop.state} {stop.zip}
