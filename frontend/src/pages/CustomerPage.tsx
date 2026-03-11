@@ -79,10 +79,12 @@ function buildServiceHistory(
   jobs: CustomerServiceJobApi[],
 ): ServiceHistoryEntry[] {
   return jobs.map((job) => ({
-      date: job.completed_at ? formatDisplayDate(job.completed_at) : "Not completed",
-      status: job.status,
-      notes: job.failure_reason ?? "",
-    }));
+    date: job.completed_at
+      ? formatDisplayDate(job.completed_at)
+      : "Not completed",
+    status: job.status,
+    notes: job.failure_reason ?? "",
+  }));
 }
 
 function buildCustomerViewModel(jobs: CustomerServiceJobApi[]): Customer {
@@ -164,12 +166,15 @@ const CustomerPage = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 items-stretch">
         <div className="flex flex-col gap-4">
-          <LocationCard location={customer.location} serviceJob={customer.serviceJob} />
+          <LocationCard
+            location={customer.location}
+            serviceJob={customer.serviceJob}
+          />
           <ServiceHistoryCard serviceHistory={customer.serviceHistory} />
         </div>
         <div className="flex flex-col gap-4">
           <ServiceStatusCard serviceJob={customer.serviceJob} />
-          <ServiceIssuesCard issues={customer.serviceIssues} />
+          <ServiceIssuesCard />
         </div>
       </div>
     </div>
