@@ -32,20 +32,17 @@ const StopCard = ({ stop, onComplete }: StopCardProps) => {
     setSuccess(false);
 
     try {
-      // Update job status and failure reason
       const updatePayload: any = {
         status: statusAction,
         completed_at: new Date().toISOString(),
       };
       
-      // Only include failure_reason if status is FAILED and reason is selected
       if (statusAction === "FAILED" && reason) {
         updatePayload.failure_reason = reason;
       }
       
       await http.patch(`/service-jobs/${stop.job_id}/metadata`, updatePayload);
 
-      // Upload proof image if provided (only for FAILED status)
       if (proofFile && statusAction === "FAILED") {
         if (!stop.job_id) {
           throw new Error("Job ID is missing");
@@ -60,7 +57,6 @@ const StopCard = ({ stop, onComplete }: StopCardProps) => {
         });
       }
 
-      // Call onComplete with updated stop data
       if (onComplete) {
         const updatedStop: Stop = {
           ...stop,
@@ -81,7 +77,6 @@ const StopCard = ({ stop, onComplete }: StopCardProps) => {
       let errorMsg = "Failed to upload proof";
       
       if (err.response?.data?.detail) {
-        // Handle array of validation errors
         if (Array.isArray(err.response.data.detail)) {
           errorMsg = err.response.data.detail.map((e: any) => 
             `${e.loc?.join('.') || 'field'}: ${e.msg}`

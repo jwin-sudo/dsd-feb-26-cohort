@@ -103,7 +103,6 @@ const DriverDashboard = () => {
       prevStops.map(s => s.job_id === updatedStop.job_id ? updatedStop : s)
     );
     
-    // Find next non-skipped stop
     let nextIndex = currentStopIndex + 1;
     while (nextIndex < stops.length && stops[nextIndex].status === "SKIPPED") {
       nextIndex++;

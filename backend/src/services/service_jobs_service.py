@@ -13,12 +13,11 @@ def update_service_job_metadata(job_id: int, updates: dict[str, Any]) -> dict[st
             detail="At least one metadata field is required",
         )
 
-    # Convert datetime objects to ISO strings for Supabase
     if "completed_at" in updates and isinstance(updates["completed_at"], datetime):
         updates["completed_at"] = updates["completed_at"].isoformat()
     
     if updates.get("status") == "COMPLETED" and "completed_at" not in updates:
-        updates["completed_at"] = datetime.now(timezone.utc).isoformat()
+        updates["completed_at"] = datetime.now(timezone.cst).isoformat()
 
     client = supabase_admin or supabase
 
@@ -69,7 +68,6 @@ def list_service_jobs_for_driver(user_id: str) -> list[dict[str, Any]]:
     client = supabase_admin or supabase
 
     try:
-        # Get driver_id from user_id
         driver_response = (
             client.table("drivers")
             .select("driver_id")
@@ -84,7 +82,6 @@ def list_service_jobs_for_driver(user_id: str) -> list[dict[str, Any]]:
         
         driver_id = driver_data[0]["driver_id"]
         
-        # Get route_id(s) assigned to this driver
         route_response = (
             client.table("garbage_routes")
             .select("route_id")
@@ -98,7 +95,6 @@ def list_service_jobs_for_driver(user_id: str) -> list[dict[str, Any]]:
         
         route_ids = [r["route_id"] for r in route_data]
         
-        # Get service jobs for these routes
         response = (
             client.table("service_jobs")
             .select(

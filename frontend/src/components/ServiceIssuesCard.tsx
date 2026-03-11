@@ -51,7 +51,7 @@ const ServiceIssuesCard = () => {
               </div>
               {job.completed_at && (
                 <p className="text-xs text-gray-500">
-                  {new Date(job.completed_at).toLocaleString()}
+                  {new Date(job.completed_at + 'Z').toLocaleString('en-US', { timeZone: 'America/Chicago' })}
                 </p>
               )}
             </div>
