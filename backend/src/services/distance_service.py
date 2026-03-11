@@ -131,8 +131,7 @@ def get_addresses_from_requests(requested_for_date: str) -> list[dict]:
     response = (
         supabase.table("customer_requests")
         .select("customer_id, request_type, requested_for_date, customers(customer_id, customer_name, billing_address)")
-        .eq("request_type", "EXTRA")
-        .eq("status", "PENDING")
+        .or_("request_type.eq.EXTRA,status.eq.PENDING")
         .eq("requested_for_date", requested_for_date)
         .execute()
     )
@@ -154,14 +153,73 @@ def get_addresses_from_requests(requested_for_date: str) -> list[dict]:
 DRIVER_ORIGIN = "7740 Ellington Drive, Dallas, TX 75241"
 
 
-def optimize_route_from_requests(requested_for_date: str) -> dict:
-    extra_requests = get_addresses_from_requests(requested_for_date)
+def get_addresses_from_service_jobs(requested_for_date: str) -> tuple[list[str], list[int]]:
+    """Return (addresses, location_ids) for all PENDING service jobs on requested_for_date."""
+    from src.api.supabase_client import supabase
 
-    if not extra_requests:
+    routes_response = (
+        supabase.table("garbage_routes")
+        .select("route_id")
+        .eq("service_date", requested_for_date)
+        .execute()
+    )
+    route_ids = [r["route_id"] for r in (routes_response.data or [])]
+    if not route_ids:
+        return [], []
+
+    jobs_response = (
+        supabase.table("service_jobs")
+        .select("location_id, sequence_order")
+        .in_("route_id", route_ids)
+        .eq("status", "PENDING")
+        .order("sequence_order")
+        .execute()
+    )
+    jobs = jobs_response.data or []
+    ordered_location_ids = [j["location_id"] for j in jobs if j.get("location_id")]
+    if not ordered_location_ids:
+        return [], []
+
+    locations_response = (
+        supabase.table("service_locations")
+        .select("location_id, street_address, city, state, zipcode")
+        .in_("location_id", ordered_location_ids)
+        .execute()
+    )
+    locations_by_id = {row["location_id"]: row for row in (locations_response.data or [])}
+
+    addresses = []
+    result_location_ids = []
+    for job in jobs:
+        loc = locations_by_id.get(job["location_id"])
+        if not loc:
+            continue
+        street = (loc.get("street_address") or "").strip()
+        city = (loc.get("city") or "").strip()
+        state = (loc.get("state") or "").strip()
+        zipcode = (loc.get("zipcode") or "").strip()
+        if street and city:
+            addresses.append(f"{street}, {city}, {state} {zipcode}".strip())
+            result_location_ids.append(job["location_id"])
+
+    return addresses, result_location_ids
+
+
+def optimize_route_from_requests(requested_for_date: str) -> dict:
+    addresses, location_ids = get_addresses_from_service_jobs(requested_for_date)
+
+    if not addresses:
         return {
-            "message": f"No EXTRA requests found for {requested_for_date}.",
+            "message": f"No service jobs found for {requested_for_date}.",
             "routes": [],
         }
 
-    addresses = [r["billing_address"] for r in extra_requests]
-    return optimize_distance(origin=DRIVER_ORIGIN, destinations=addresses)
+    result = optimize_distance(origin=DRIVER_ORIGIN, destinations=addresses)
+
+    # Inject location_id into each job step so the frontend can match back to service jobs.
+    id_to_location_id = {i: loc_id for i, loc_id in enumerate(location_ids, start=1)}
+    for step in (result.get("routes") or [{}])[0].get("steps", []):
+        if step.get("id") is not None:
+            step["location_id"] = id_to_location_id.get(step["id"])
+
+    return result

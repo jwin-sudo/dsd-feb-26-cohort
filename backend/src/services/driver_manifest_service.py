@@ -211,8 +211,8 @@ def _optimized_location_order(route: dict, locations: list[dict]) -> list[int]:
         return default_order
 
     steps = (((optimized.get("routes") or [{}])[0]).get("steps") or [])
-    # distance_service currently assigns destination ids from 2..N.
-    job_id_to_location_id = {index + 2: loc_id for index, loc_id in enumerate(location_ids)}
+    # optimize_distance assigns job ids starting from 1.
+    job_id_to_location_id = {i: loc_id for i, loc_id in enumerate(location_ids, start=1)}
 
     ordered: list[int] = []
     for step in steps:

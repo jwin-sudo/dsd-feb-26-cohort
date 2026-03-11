@@ -112,3 +112,27 @@ export async function generateDriverManifest(serviceDate: string): Promise<Drive
   try { sessionStorage.removeItem(`driver_manifest:${serviceDate}`); } catch { /* ignore */ }
   return response.data;
 }
+
+export type OptimizedStep = {
+  type: "start" | "job" | "end";
+  id?: number | null;
+  location_id?: number | null;
+  address?: string | null;
+  duration: number;
+  leg_distance_meters: number;
+};
+
+export type OptimizedRouteResponse = {
+  total_duration: number;
+  total_distance_meters: number;
+  total_distance_miles: number;
+  routes: { steps: OptimizedStep[] }[];
+  message?: string;
+};
+
+export async function fetchOptimizedRoute(serviceDate: string): Promise<OptimizedRouteResponse> {
+  const response = await http.post<OptimizedRouteResponse>("/distance/optimize-requests", {
+    requested_for_date: serviceDate,
+  });
+  return response.data;
+}

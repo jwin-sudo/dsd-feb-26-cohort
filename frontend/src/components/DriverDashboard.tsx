@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import DriverDashHeader from "./DriverDashHeader";
 import StopCard from "./StopCard";
 import RouteHealtCard from "./RouteHealtCard";
 import RouteListCard from "./RouteListCard";
-import { fetchManifestJobs, generateDriverManifest, type DriverManifestResponse } from "@/api/driverManifest";
+import { fetchManifestJobs, generateDriverManifest, fetchOptimizedRoute, type DriverManifestResponse } from "@/api/driverManifest";
 import type { Stop, Route } from "@/types/driver";
 
 function todayIsoDate(): string {
@@ -51,18 +51,45 @@ const DriverDashboard = () => {
   const [route, setRoute] = useState<Route | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const loadedRef = useRef(false);  // ← add this
 
   useEffect(() => {
+    if (loadedRef.current) return;
+    loadedRef.current = true;
+
     const today = todayIsoDate();
-    fetchManifestJobs(today)
-      .then(async (data) => {
-        if (!data.route) {
-          const generated = await generateDriverManifest(today);
-          setRoute(buildRoute(generated));
-        } else {
-          setRoute(buildRoute(data));
+
+    async function load() {
+      // Only call generate (which writes to DB) if no route exists yet.
+      // Otherwise just fetch existing job data — no DB writes.
+      let manifest = await fetchManifestJobs(today);
+      if (!manifest.route) {
+        manifest = await generateDriverManifest(today);
+      }
+
+      // Apply ORS-optimized order in memory only — never writes to DB.
+      try {
+        const optimized = await fetchOptimizedRoute(today);
+        const orderedLocationIds: number[] = (optimized.routes?.[0]?.steps ?? [])
+          .filter((s) => s.type === "job" && s.location_id != null)
+          .map((s) => s.location_id as number);
+
+        const built = buildRoute(manifest);
+        if (built && orderedLocationIds.length > 0) {
+          const indexMap = new Map(orderedLocationIds.map((id, i) => [id, i]));
+          built.stops.sort(
+            (a, b) => (indexMap.get(a.location_id) ?? 9999) - (indexMap.get(b.location_id) ?? 9999)
+          );
+          built.stops.forEach((s, i) => { s.sequence_order = i + 1; });
         }
-      })
+        setRoute(built);
+      } catch {
+        // ORS unavailable — fall back to stored sequence_order.
+        setRoute(buildRoute(manifest));
+      }
+    }
+
+    load()
       .catch((e) => setError(e instanceof Error ? e.message : "Failed to load"))
       .finally(() => setLoading(false));
   }, []);
