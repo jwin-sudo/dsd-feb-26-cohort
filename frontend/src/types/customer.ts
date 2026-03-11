@@ -47,7 +47,6 @@ export type CustomerServiceJobApi = {
     state?: string | null;
     zipcode?: string | null;
   };
-  requested_for_date?: string | null;
   completed_at?: string | null;
   status: ServiceJobStatus;
   failure_reason?: string | null;

@@ -59,7 +59,7 @@ function buildCurrentServiceJob(job: CustomerServiceJobApi | null): ServiceJob {
     status: mapStatus(job.status),
     service: job.job_source === "EXTRA_REQUEST" ? "Extra Pickup" : "Scheduled",
     stopOrder: job.sequence_order ?? 0,
-    scheduledPickup: formatDisplayDate(job.requested_for_date),
+    scheduledPickup: "Not provided by API",
     requestFormOpen: job.status === "PENDING" || job.status === "SKIPPED",
     serviceType: mapServiceType(job),
   };
@@ -78,11 +78,13 @@ function buildLocation(job: CustomerServiceJobApi | null): CustomerLocation {
 function buildServiceHistory(
   jobs: CustomerServiceJobApi[],
 ): ServiceHistoryEntry[] {
-  return jobs.map((job) => ({
-    date: formatDisplayDate(job.requested_for_date ?? job.completed_at),
-    status: job.status,
-    notes: job.failure_reason ?? "",
-  }));
+  return jobs
+    .filter((job) => job.status === "COMPLETED" && job.completed_at)
+    .map((job) => ({
+      date: formatDisplayDate(job.completed_at),
+      status: job.status,
+      notes: job.failure_reason ?? "",
+    }));
 }
 
 function buildCustomerViewModel(jobs: CustomerServiceJobApi[]): Customer {

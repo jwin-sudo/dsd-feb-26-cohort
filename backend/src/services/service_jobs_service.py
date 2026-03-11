@@ -10,14 +10,6 @@ def _client():
     return supabase_admin or supabase
 
 
-def _request_type_for_job_source(job_source: str | None) -> str | None:
-    if job_source == "EXTRA_REQUEST":
-        return "EXTRA"
-    if job_source == "SCHEDULED":
-        return "SKIP"
-    return None
-
-
 def _attach_location_details(jobs: list[dict[str, Any]]) -> list[dict[str, Any]]:
     if not jobs:
         return []
@@ -55,63 +47,8 @@ def _attach_location_details(jobs: list[dict[str, Any]]) -> list[dict[str, Any]]
     return enriched_jobs
 
 
-def _attach_request_dates(jobs: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    if not jobs:
-        return []
-
-    location_ids = list({job["location_id"] for job in jobs if job.get("location_id")})
-    if not location_ids:
-        return jobs
-
-    requests_response = (
-        _client()
-        .table("customer_requests")
-        .select("request_id,location_id,request_type,requested_for_date,created_at")
-        .in_("location_id", location_ids)
-        .execute()
-    )
-    requests = requests_response.data or []
-
-    latest_by_key: dict[tuple[int, str], dict[str, Any]] = {}
-    for request in requests:
-        location_id = request.get("location_id")
-        request_type = request.get("request_type")
-        if not location_id or not request_type:
-            continue
-
-        key = (location_id, request_type)
-        existing = latest_by_key.get(key)
-        request_created_at = request.get("created_at") or ""
-        existing_created_at = (existing or {}).get("created_at") or ""
-        request_id = request.get("request_id") or 0
-        existing_id = (existing or {}).get("request_id") or 0
-        if (
-            existing is None
-            or request_created_at > existing_created_at
-            or (request_created_at == existing_created_at and request_id > existing_id)
-        ):
-            latest_by_key[key] = request
-
-    enriched_jobs: list[dict[str, Any]] = []
-    for job in jobs:
-        request_type = _request_type_for_job_source(job.get("job_source"))
-        request = (
-            latest_by_key.get((job["location_id"], request_type))
-            if request_type and job.get("location_id")
-            else None
-        )
-        enriched_jobs.append(
-            {
-                **job,
-                "requested_for_date": (request or {}).get("requested_for_date"),
-            }
-        )
-
-    return enriched_jobs
-
-
 def _enrich_customer_jobs(jobs: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    return _attach_request_dates(_attach_location_details(jobs))
+    return _attach_location_details(jobs)
 
 
 def update_service_job_metadata(job_id: int, updates: dict[str, Any]) -> dict[str, Any]:
