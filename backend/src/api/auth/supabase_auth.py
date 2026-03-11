@@ -72,10 +72,17 @@ def upsert_user_role(user_id: str, role: Literal["driver", "customer"]) -> dict:
     return data[0]
 
 async def get_user_by_email(email: str) -> Optional[dict]:
+    client = _require_admin_client()
+    normalized_email = email.strip().lower()
     try:
-        response = supabase.auth.admin.list_users()
-        for user in response.users:
-            if user.email == email:
+        response = client.auth.admin.list_users()
+        users = getattr(response, "users", response)
+        if not isinstance(users, list):
+            users = []
+
+        for user in users:
+            user_email = (user.email or "").strip().lower()
+            if user_email == normalized_email:
                 return {
                     "id": user.id,
                     "email": user.email,
@@ -84,8 +91,10 @@ async def get_user_by_email(email: str) -> Optional[dict]:
                 }
         return None
     except Exception as e:
-        print(f"Error fetching user: {str(e)}")
-        return None
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error fetching user by email: {str(e)}",
+        )
 
 async def confirm_user_email(user_id: str) -> bool:
     try:
@@ -105,3 +114,28 @@ async def delete_user(user_id: str) -> bool:
     except Exception as e:
         print(f"Error deleting user: {str(e)}")
         return False
+
+
+def update_user_password_by_email(email: str, password: str) -> bool:
+    client = _require_admin_client()
+    normalized_email = email.strip().lower()
+    try:
+        response = client.auth.admin.list_users()
+        users = getattr(response, "users", response)
+        if not isinstance(users, list):
+            users = []
+
+        matched_user = next(
+            (user for user in users if (user.email or "").strip().lower() == normalized_email),
+            None,
+        )
+        if matched_user is None:
+            return False
+
+        client.auth.admin.update_user_by_id(matched_user.id, {"password": password})
+        return True
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update password: {str(e)}",
+        )

@@ -3,7 +3,7 @@ import { ChevronFirst, ChevronLast } from "lucide-react";
 import { CircleUser } from "lucide-react";
 import { LogOut } from "lucide-react";
 import type { SidebarItem } from "../types/sidebar";
-import { Link } from "react-router-dom";
+import { Link ,useLocation} from "react-router-dom";
 import type { User } from "../types/auth";
 
 type SidebarProps = {
@@ -14,13 +14,9 @@ type SidebarProps = {
   setExpand: (value: boolean | ((prev: boolean) => boolean)) => void;
 };
 
-const Sidebar = ({
-  items,
-  user,
-  onLogout,
-  expand,
-  setExpand,
-}: SidebarProps) => {
+const Sidebar = ({ items, user, onLogout, expand, setExpand }: SidebarProps) => {
+  const location = useLocation();
+
   const allowedPathsByRole: Record<string, string[]> = {
     driver: ["/dashboard", "/driver"],
     customer: ["/dashboard"],
@@ -62,7 +58,9 @@ const Sidebar = ({
               <li key={index}>
                 <Link
                   to={item.path}
-                  className="relative flex items-center p-3 hover:bg-gray-100 hover:text-green-600 rounded-md cursor-pointer group"
+
+                  className={`relative flex items-center gap-2 p-3 hover:bg-gray-100 hover:text-green-600 rounded-md cursor-pointer group ${location.pathname === item.path ? "bg-green-100 text-green-600":"hover:bg-gray-100 hover:text-green-600"}`}
+                
                 >
                   <Icon size={20} />
                   <span
@@ -86,18 +84,15 @@ const Sidebar = ({
           })}
         </ul>
 
-        <div className="border-t flex p-2 items-center justify-between">
-          <div className="flex items-center gap-2">
-            <CircleUser size={27} />
-
-            {expand && (
-              <div className="ml-1">
-                <h2 className="font-semibold text-[13px]">
-                  {user?.email ?? "Guest"}
-                </h2>
-                <p className="text-xs">{user?.role ?? "—"}</p>
-              </div>
-            )}
+        <div className="border-t flex p-2 items-center gap-2 justify-between">
+          <div className={`flex items-center gap-2 `}>
+            <CircleUser size={33} />
+            <div
+              className={`overflow-hidden transition-all ${expand ? "w-30 ml-1" : "w-0"}`}
+            >
+              <h2 className="font-semibold">{user?.email?.split("@")[0] ?? "Guest"}</h2>
+              <p className="text-xs">{user?.role ?? "—"}</p>
+            </div>
           </div>
 
           <button

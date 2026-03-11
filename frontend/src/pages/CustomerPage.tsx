@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import CustomerHeader from "@/components/CustomerHeader";
 import LocationCard from "@/components/LocationCard";
 import ServiceStatusCard from "@/components/ServiceStatusCard";
@@ -78,3 +77,4 @@ const CustomerPage = () => {
 };
 
 export default CustomerPage;
+
