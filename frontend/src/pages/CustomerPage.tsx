@@ -3,7 +3,7 @@ import LocationCard from "@/components/LocationCard";
 import ServiceStatusCard from "@/components/ServiceStatusCard";
 import ServiceHistoryCard from "@/components/ServiceHistoryCard";
 import ServiceIssuesCard from "@/components/ServiceIssuesCard";
-
+import { useEffect, useState } from "react";
 import type { Customer } from "@/types/customer";
 
 import { mockCustomer } from "@/assets/mockCustomer";
@@ -77,4 +77,3 @@ const CustomerPage = () => {
 };
 
 export default CustomerPage;
-

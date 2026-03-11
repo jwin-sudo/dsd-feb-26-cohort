@@ -29,7 +29,6 @@ const ServiceIssuesCard = ({ issues }: ServiceIssuesCardProps) => {
               key={i}
               className="border rounded-md p-3 flex flex-col gap-2 bg-red-50"
             >
-           
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 rounded-full bg-red-500" />
                 <p className="text-sm font-semibold text-red-600">
@@ -37,7 +36,6 @@ const ServiceIssuesCard = ({ issues }: ServiceIssuesCardProps) => {
                 </p>
               </div>
 
-              
               {issue.photoUrl && (
                 <img
                   src={issue.photoUrl}
