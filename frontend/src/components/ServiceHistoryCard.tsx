@@ -16,7 +16,7 @@ const ServiceHistoryCard = ({ serviceHistory }: ServiceHistoryCardProps) => {
         </div>
         {serviceHistory.length === 0 ? (
           <p className="text-sm text-gray-400 text-center py-4">
-            No completed service history yet
+            No service history yet
           </p>
         ) : (
           <table className="w-full">

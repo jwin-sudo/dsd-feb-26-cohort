@@ -78,10 +78,8 @@ function buildLocation(job: CustomerServiceJobApi | null): CustomerLocation {
 function buildServiceHistory(
   jobs: CustomerServiceJobApi[],
 ): ServiceHistoryEntry[] {
-  return jobs
-    .filter((job) => job.status === "COMPLETED" && job.completed_at)
-    .map((job) => ({
-      date: formatDisplayDate(job.completed_at),
+  return jobs.map((job) => ({
+      date: job.completed_at ? formatDisplayDate(job.completed_at) : "Not completed",
       status: job.status,
       notes: job.failure_reason ?? "",
     }));
