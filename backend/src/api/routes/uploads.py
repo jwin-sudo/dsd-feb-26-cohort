@@ -18,7 +18,7 @@ MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
 async def upload_image(
     file: UploadFile = File(...),
     job_id: Optional[int] = Form(None),
-    _=Depends(require_role("driver"))
+    user=Depends(require_role("driver"))
 ):
     if supabase_admin is None:
         raise HTTPException(status_code=503, detail="Upload service not configured")
@@ -36,6 +36,70 @@ async def upload_image(
 
     if len(contents) > MAX_FILE_SIZE:
         raise HTTPException(status_code=400, detail="File too large")
+
+    if job_id:
+        try:
+            driver = supabase.table("drivers").select(
+                "driver_id"
+            ).eq("user_id", user["id"]).single().execute()
+
+            if not driver.data:
+                raise HTTPException(status_code=403, detail="Driver not found")
+
+            driver_id = driver.data.get("driver_id")
+
+            job = supabase.table("service_jobs").select(
+                "route_id"
+            ).eq("job_id", job_id).single().execute()
+
+            if not job.data:
+                raise HTTPException(status_code=404, detail="Job not found")
+
+            route_id = job.data.get("route_id")
+
+            route = supabase.table("garbage_routes").select(
+                "driver_id"
+            ).eq("route_id", route_id).single().execute()
+
+            if not route.data or route.data.get("driver_id") != driver_id:
+                raise HTTPException(status_code=403, detail="You don't have permission to upload proof for this job")
+
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Authorization check failed: {str(e)}")
+
+    if job_id:
+        try:
+            driver = supabase.table("drivers").select(
+                "driver_id"
+            ).eq("user_id", user["id"]).single().execute()
+
+            if not driver.data:
+                raise HTTPException(status_code=403, detail="Driver not found")
+
+            driver_id = driver.data.get("driver_id")
+
+            job = supabase.table("service_jobs").select(
+                "route_id"
+            ).eq("job_id", job_id).single().execute()
+
+            if not job.data:
+                raise HTTPException(status_code=404, detail="Job not found")
+
+            route_id = job.data.get("route_id")
+
+            route = supabase.table("garbage_routes").select(
+                "driver_id"
+            ).eq("route_id", route_id).single().execute()
+
+            if not route.data or route.data.get("driver_id") != driver_id:
+                raise HTTPException(status_code=403, detail="You don't have permission to upload proof for this job")
+
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Authorization check failed: {str(e)}")
 
     file_ext = file.filename.split(".")[-1].lower()
     file_name = f"{uuid4()}.{file_ext}"

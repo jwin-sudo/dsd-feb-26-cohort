@@ -17,7 +17,7 @@ def update_service_job_metadata(job_id: int, updates: dict[str, Any]) -> dict[st
         updates["completed_at"] = updates["completed_at"].isoformat()
     
     if updates.get("status") == "COMPLETED" and "completed_at" not in updates:
-        updates["completed_at"] = datetime.now(timezone.cst).isoformat()
+        updates["completed_at"] = datetime.now(timezone.utc).isoformat()
 
     client = supabase_admin or supabase
 

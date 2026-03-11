@@ -27,6 +27,13 @@ const ServiceIssuesCard = () => {
     fetchJobs();
   }, []);
 
+  const formatCompletedAt = (completed_at: string | null) => {
+    const completedAt = completed_at ? new Date(completed_at) : null;
+    return completedAt && !Number.isNaN(completedAt.getTime())
+      ? completedAt.toLocaleString("en-US", { timeZone: "America/Chicago" })
+      : null;
+  };
+
   return (
     <Card className="flex-1">
       <CardContent className="p-4 flex flex-col gap-2">
@@ -49,9 +56,9 @@ const ServiceIssuesCard = () => {
                   Job #{job.job_id} - {job.status}
                 </p>
               </div>
-              {job.completed_at && (
+              {formatCompletedAt(job.completed_at) && (
                 <p className="text-xs text-gray-500">
-                  {new Date(job.completed_at + 'Z').toLocaleString('en-US', { timeZone: 'America/Chicago' })}
+                  {formatCompletedAt(job.completed_at)}
                 </p>
               )}
             </div>
