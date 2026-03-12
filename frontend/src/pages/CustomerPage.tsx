@@ -16,8 +16,10 @@ import type {
   CustomerLocation,
   CustomerServiceJobApi,
   ServiceHistoryEntry,
+  ServiceIssue,
   ServiceJob,
 } from "@/types/customer";
+import type { User } from "@/types/auth";
 
 function formatDisplayDate(value?: string | null): string {
   if (!value) return "Not scheduled";
@@ -80,9 +82,12 @@ function buildCurrentServiceJob(job: CustomerServiceJobApi | null): ServiceJob {
   };
 }
 
-function buildLocation(job: CustomerServiceJobApi | null): CustomerLocation {
+function buildLocation(
+  job: CustomerServiceJobApi | null,
+  customerName: string,
+): CustomerLocation {
   return {
-    name: "Service Location",
+    name: customerName,
     street: job?.address?.street_address ?? "Address unavailable",
     city: job?.address?.city ?? "",
     state: job?.address?.state ?? "",
@@ -102,22 +107,42 @@ function buildServiceHistory(
   }));
 }
 
-function buildCustomerViewModel(jobs: CustomerServiceJobApi[]): Customer {
+function buildServiceIssues(jobs: CustomerServiceJobApi[]): ServiceIssue[] {
+  return jobs
+    .filter((job) => job.status === "FAILED" && job.failure_reason)
+    .map((job) => ({
+      jobId: job.job_id,
+      reason: job.failure_reason as string,
+      completedAt: job.completed_at,
+      photoUrl: job.proof_of_service_photo ?? undefined,
+      hasProof: Boolean(job.proof_of_service_photo),
+    }));
+}
+
+function resolveCustomerName(
+  jobs: CustomerServiceJobApi[],
+  user: User,
+): string {
+  const jobName = jobs.find((job) => job.customer_name)?.customer_name?.trim();
+  if (jobName) return jobName;
+  return user.email;
+}
+
+function buildCustomerViewModel(jobs: CustomerServiceJobApi[], user: User): Customer {
   const currentJob =
     jobs.find((job) => job.status === "PENDING") ??
     jobs.find((job) => job.status === "SKIPPED") ??
     jobs[0] ??
     null;
+  const customerName = resolveCustomerName(jobs, user);
 
   return {
-    id: "current-customer",
-    name: "Customer",
+    id: user.id,
+    name: customerName,
     role: "customer",
-    location: buildLocation(currentJob),
+    location: buildLocation(currentJob, customerName),
     serviceJob: buildCurrentServiceJob(currentJob),
-    serviceIssues: jobs
-      .filter((job) => job.status === "FAILED" && job.failure_reason)
-      .map((job) => ({ reason: job.failure_reason as string })),
+    serviceIssues: buildServiceIssues(jobs),
     serviceHistory: buildServiceHistory(jobs),
   };
 }
@@ -147,7 +172,11 @@ function mapRequestType(
   return null;
 }
 
-const CustomerPage = () => {
+type CustomerPageProps = {
+  user: User;
+};
+
+const CustomerPage = ({ user }: CustomerPageProps) => {
   const [jobs, setJobs] = useState<CustomerServiceJobApi[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -172,10 +201,7 @@ const CustomerPage = () => {
     void loadCustomerJobs();
   }, []);
 
-  const customer: Customer = useMemo(
-    () => buildCustomerViewModel(jobs),
-    [jobs],
-  );
+  const customer: Customer = useMemo(() => buildCustomerViewModel(jobs, user), [jobs, user]);
 
   useEffect(() => {
     setSelectedServiceType(customer.serviceJob.serviceType);
@@ -217,7 +243,10 @@ const CustomerPage = () => {
 
   return (
     <div className="p-6">
-      <CustomerHeader location={formatLocationLabel(customer.location)} />
+      <CustomerHeader
+        customerName={customer.name}
+        location={formatLocationLabel(customer.location)}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 items-stretch">
         <div className="flex flex-col gap-4">
@@ -237,7 +266,7 @@ const CustomerPage = () => {
             serviceJob={customer.serviceJob}
             isSubmitted={isRequestSubmitted}
           />
-          <ServiceIssuesCard />
+          <ServiceIssuesCard issues={customer.serviceIssues} />
         </div>
       </div>
     </div>

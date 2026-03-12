@@ -24,8 +24,11 @@ export type CustomerLocation = {
 };
 
 export type ServiceIssue = {
+  jobId: number;
   reason: string;
+  completedAt?: string | null;
   photoUrl?: string;
+  hasProof: boolean;
 };
 export type Customer = {
   id: string;
@@ -45,6 +48,7 @@ export type CustomerServiceJobApi = {
   location_id: number;
   route_id?: number | null;
   service_date?: string | null;
+  customer_name?: string | null;
   sequence_order?: number | null;
   job_source: ServiceJobSource;
   address?: {

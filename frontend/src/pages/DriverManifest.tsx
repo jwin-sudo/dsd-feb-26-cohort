@@ -44,8 +44,8 @@ const DriverManifest = () => {
     void loadManifest(serviceDate);
   }, [serviceDate]);
 
-  const jobs = manifest?.jobs ?? [];
   const filteredJobs = useMemo(() => {
+    const jobs = manifest?.jobs ?? [];
     const query = searchQuery.trim().toLowerCase();
     if (!query) return jobs;
 
@@ -54,7 +54,7 @@ const DriverManifest = () => {
       const customerName = job.customer_name?.toLowerCase() ?? "";
       return address.includes(query) || customerName.includes(query);
     });
-  }, [jobs, searchQuery]);
+  }, [manifest?.jobs, searchQuery]);
   const skips = manifest?.skip_count ?? 0;
   const extras = manifest?.extra_count ?? 0;
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import type { DriverManifestJob } from "@/api/driverManifest";
 
 type ManifestProps = {
@@ -9,15 +9,12 @@ const Manifest = ({ jobs }: ManifestProps) => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsInPage = 10;
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [jobs]);
-
   const totalPages = Math.max(1, Math.ceil(jobs.length / itemsInPage));
+  const visiblePage = Math.min(currentPage, totalPages);
   const currItems = useMemo(
     () =>
-      jobs.slice((currentPage - 1) * itemsInPage, currentPage * itemsInPage),
-    [currentPage, jobs],
+      jobs.slice((visiblePage - 1) * itemsInPage, visiblePage * itemsInPage),
+    [jobs, visiblePage],
   );
 
   const pageNumbers = [];
@@ -72,7 +69,7 @@ const Manifest = ({ jobs }: ManifestProps) => {
       <div className="flex justify-end items-center gap-2 p-4">
         <button
           onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-          disabled={currentPage === 1}
+          disabled={visiblePage === 1}
           className="px-3 py-1 rounded border disabled:opacity-50 cursor-pointer"
         >
           Previous
@@ -82,7 +79,7 @@ const Manifest = ({ jobs }: ManifestProps) => {
           <button
             key={page}
             onClick={() => setCurrentPage(page)}
-            className={`px-3 py-1 cursor-pointer rounded border ${currentPage === page ? "bg-black text-white" : ""}`}
+            className={`px-3 py-1 cursor-pointer rounded border ${visiblePage === page ? "bg-black text-white" : ""}`}
           >
             {page}
           </button>
@@ -90,7 +87,7 @@ const Manifest = ({ jobs }: ManifestProps) => {
 
         <button
           onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-          disabled={currentPage === totalPages}
+          disabled={visiblePage === totalPages}
           className="px-3 py-1 rounded border disabled:opacity-50 cursor-pointer"
         >
           Next

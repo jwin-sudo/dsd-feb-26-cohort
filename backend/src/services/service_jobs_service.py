@@ -187,7 +187,7 @@ def list_service_jobs_for_customer_user(user_id: str) -> list[dict[str, Any]]:
 
     customer_response = (
         client.table("customers")
-        .select("customer_id")
+        .select("customer_id,customer_name")
         .eq("user_id", user_id)
         .limit(1)
         .execute()
@@ -200,6 +200,7 @@ def list_service_jobs_for_customer_user(user_id: str) -> list[dict[str, Any]]:
         )
 
     customer_id = customer_rows[0]["customer_id"]
+    customer_name = customer_rows[0].get("customer_name")
     locations_response = (
         client.table("service_locations")
         .select("location_id")
@@ -221,7 +222,7 @@ def list_service_jobs_for_customer_user(user_id: str) -> list[dict[str, Any]]:
         .execute()
     )
     jobs = jobs_response.data or []
-    return _enrich_customer_jobs(
+    enriched_jobs = _enrich_customer_jobs(
         sorted(
             jobs,
             key=lambda row: (
@@ -233,3 +234,4 @@ def list_service_jobs_for_customer_user(user_id: str) -> list[dict[str, Any]]:
             ),
         )
     )
+    return [{**job, "customer_name": customer_name} for job in enriched_jobs]

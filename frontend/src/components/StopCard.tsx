@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { isAxiosError } from "axios";
 import { MapPin } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,7 +23,40 @@ const StopCard = ({ stop, onComplete }: StopCardProps) => {
   const [success, setSuccess] = useState(false);
 
   const isSubmitDisabled =
-    !statusAction || (statusAction === "FAILED" && reason.length === 0);
+    !statusAction ||
+    (statusAction === "FAILED" && (reason.length === 0 || proofFile === null));
+
+  type UpdatePayload = {
+    status: "COMPLETED" | "FAILED";
+    completed_at: string;
+    failure_reason?: string;
+  };
+
+  type ValidationError = {
+    loc?: Array<string | number>;
+    msg: string;
+  };
+
+  function extractErrorMessage(err: unknown): string {
+    if (isAxiosError<{ detail?: string | ValidationError[] }>(err)) {
+      const detail = err.response?.data?.detail;
+      if (Array.isArray(detail)) {
+        return detail
+          .map((entry) => `${entry.loc?.join(".") || "field"}: ${entry.msg}`)
+          .join(", ");
+      }
+      if (typeof detail === "string") {
+        return detail;
+      }
+      return err.message;
+    }
+
+    if (err instanceof Error) {
+      return err.message;
+    }
+
+    return "Failed to upload proof";
+  }
 
   const handleSubmit = async () => {
     if (isSubmitDisabled) return;
@@ -32,7 +66,7 @@ const StopCard = ({ stop, onComplete }: StopCardProps) => {
     setSuccess(false);
 
     try {
-      const updatePayload: any = {
+      const updatePayload: UpdatePayload = {
         status: statusAction,
         completed_at: new Date().toISOString(),
       };
@@ -73,24 +107,8 @@ const StopCard = ({ stop, onComplete }: StopCardProps) => {
         setProofFile(null);
         setSuccess(false);
       }, 1000);
-    } catch (err: any) {
-      let errorMsg = "Failed to upload proof";
-      
-      if (err.response?.data?.detail) {
-        if (Array.isArray(err.response.data.detail)) {
-          errorMsg = err.response.data.detail.map((e: any) => 
-            `${e.loc?.join('.') || 'field'}: ${e.msg}`
-          ).join(', ');
-        } else if (typeof err.response.data.detail === 'string') {
-          errorMsg = err.response.data.detail;
-        } else {
-          errorMsg = JSON.stringify(err.response.data.detail);
-        }
-      } else if (err.message) {
-        errorMsg = err.message;
-      }
-      
-      setError(errorMsg);
+    } catch (err: unknown) {
+      setError(extractErrorMessage(err));
     } finally {
       setUploading(false);
     }
@@ -165,6 +183,9 @@ const StopCard = ({ stop, onComplete }: StopCardProps) => {
               onChange={(e) => setProofFile(e.target.files?.[0] ?? null)}
               className="w-full text-sm file:mr-4 file:cursor-pointer file:rounded-md file:border file:bg-gray-100 file:px-3 file:py-1 file:text-sm"
             />
+            <p className="text-xs text-gray-500">
+              A proof photo is required when marking a stop as unable to service.
+            </p>
           </div>
         )}
 
@@ -193,6 +214,6 @@ const StopCard = ({ stop, onComplete }: StopCardProps) => {
       </CardContent>
     </Card>
   )
-}
+};
 
-export default StopCard
+export default StopCard;
