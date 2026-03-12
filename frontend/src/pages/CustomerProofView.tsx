@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
+import { isAxiosError } from "axios";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import http from "../api/http";
+import type { CustomerServiceJobApi } from "@/types/customer";
 
 const formatFailureReason = (reason: string): string => {
   const reasonMap: Record<string, string> = {
@@ -34,19 +36,25 @@ const CustomerProofView = () => {
 
       try {
         const [jobResponse, proofResponse] = await Promise.all([
-          http.get("/service-jobs/my-jobs"),
+          http.get<CustomerServiceJobApi[]>("/service-jobs/my-jobs"),
           http.get(`/uploads/job/${jobId}/proof`)
         ]);
         
-        const job = jobResponse.data.find((j: any) => j.job_id.toString() === jobId);
+        const job = jobResponse.data.find((serviceJob) => serviceJob.job_id.toString() === jobId);
         if (job) {
           setJobStatus(job.status);
-          setFailureReason(job.failure_reason);
+          setFailureReason(job.failure_reason ?? null);
         }
         
         setImageUrl(proofResponse.data.url);
-      } catch (err: any) {
-        setError(err.response?.data?.detail || "Failed to load proof");
+      } catch (err: unknown) {
+        if (isAxiosError<{ detail?: string }>(err)) {
+          setError(err.response?.data?.detail || err.message || "Failed to load proof");
+        } else if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError("Failed to load proof");
+        }
       } finally {
         setLoading(false);
       }

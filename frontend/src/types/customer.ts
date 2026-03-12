@@ -9,6 +9,7 @@ export type ServiceJob = {
   service: string;
   stopOrder: number;
   scheduledPickup: string;
+  serviceDate?: string;
   requestFormOpen: boolean;
   serviceType: "normal_pickup" | "extra_pickup" | "skip_pickup";
   jobId?: number;
@@ -23,8 +24,11 @@ export type CustomerLocation = {
 };
 
 export type ServiceIssue = {
+  jobId: number;
   reason: string;
+  completedAt?: string | null;
   photoUrl?: string;
+  hasProof: boolean;
 };
 export type Customer = {
   id: string;
@@ -43,6 +47,8 @@ export type CustomerServiceJobApi = {
   job_id: number;
   location_id: number;
   route_id?: number | null;
+  service_date?: string | null;
+  customer_name?: string | null;
   sequence_order?: number | null;
   job_source: ServiceJobSource;
   address?: {
@@ -67,4 +73,11 @@ export type UpdateCustomerServiceJobPayload = {
   completed_at?: string;
   failure_reason?: string | null;
   proof_of_service_photo?: string | null;
+};
+
+export type CustomerRequestType = "SKIP" | "EXTRA";
+
+export type CreateCustomerRequestPayload = {
+  request_type: CustomerRequestType;
+  requested_for_date: string;
 };

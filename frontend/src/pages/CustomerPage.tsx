@@ -6,14 +6,20 @@ import LocationCard from "@/components/LocationCard";
 import ServiceStatusCard from "@/components/ServiceStatusCard";
 import ServiceHistoryCard from "@/components/ServiceHistoryCard";
 import ServiceIssuesCard from "@/components/ServiceIssuesCard";
-import { fetchCustomerServiceJobs } from "@/api/customerServiceJobs";
+import {
+  createCustomerRequest,
+  fetchCustomerServiceJobs,
+} from "@/api/customerServiceJobs";
 import type {
+  CustomerRequestType,
   Customer,
   CustomerLocation,
   CustomerServiceJobApi,
   ServiceHistoryEntry,
+  ServiceIssue,
   ServiceJob,
 } from "@/types/customer";
+import type { User } from "@/types/auth";
 
 function formatDisplayDate(value?: string | null): string {
   if (!value) return "Not scheduled";
@@ -41,6 +47,15 @@ function mapServiceType(job: CustomerServiceJobApi): ServiceJob["serviceType"] {
   return job.job_source === "EXTRA_REQUEST" ? "extra_pickup" : "normal_pickup";
 }
 
+function toIsoDate(value?: string | null): string | undefined {
+  if (!value) return undefined;
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return undefined;
+
+  return date.toISOString().slice(0, 10);
+}
+
 function buildCurrentServiceJob(job: CustomerServiceJobApi | null): ServiceJob {
   if (!job) {
     return {
@@ -49,6 +64,7 @@ function buildCurrentServiceJob(job: CustomerServiceJobApi | null): ServiceJob {
       service: "No active service job",
       stopOrder: 0,
       scheduledPickup: "Not scheduled",
+      serviceDate: undefined,
       requestFormOpen: false,
       serviceType: "normal_pickup",
     };
@@ -59,15 +75,19 @@ function buildCurrentServiceJob(job: CustomerServiceJobApi | null): ServiceJob {
     status: mapStatus(job.status),
     service: job.job_source === "EXTRA_REQUEST" ? "Extra Pickup" : "Scheduled",
     stopOrder: job.sequence_order ?? 0,
-    scheduledPickup: "Not provided by API",
+    scheduledPickup: formatDisplayDate(job.service_date),
+    serviceDate: toIsoDate(job.service_date),
     requestFormOpen: job.status === "PENDING" || job.status === "SKIPPED",
     serviceType: mapServiceType(job),
   };
 }
 
-function buildLocation(job: CustomerServiceJobApi | null): CustomerLocation {
+function buildLocation(
+  job: CustomerServiceJobApi | null,
+  customerName: string,
+): CustomerLocation {
   return {
-    name: "Service Location",
+    name: customerName,
     street: job?.address?.street_address ?? "Address unavailable",
     city: job?.address?.city ?? "",
     state: job?.address?.state ?? "",
@@ -87,22 +107,42 @@ function buildServiceHistory(
   }));
 }
 
-function buildCustomerViewModel(jobs: CustomerServiceJobApi[]): Customer {
+function buildServiceIssues(jobs: CustomerServiceJobApi[]): ServiceIssue[] {
+  return jobs
+    .filter((job) => job.status === "FAILED" && job.failure_reason)
+    .map((job) => ({
+      jobId: job.job_id,
+      reason: job.failure_reason as string,
+      completedAt: job.completed_at,
+      photoUrl: job.proof_of_service_photo ?? undefined,
+      hasProof: Boolean(job.proof_of_service_photo),
+    }));
+}
+
+function resolveCustomerName(
+  jobs: CustomerServiceJobApi[],
+  user: User,
+): string {
+  const jobName = jobs.find((job) => job.customer_name)?.customer_name?.trim();
+  if (jobName) return jobName;
+  return user.email;
+}
+
+function buildCustomerViewModel(jobs: CustomerServiceJobApi[], user: User): Customer {
   const currentJob =
     jobs.find((job) => job.status === "PENDING") ??
     jobs.find((job) => job.status === "SKIPPED") ??
     jobs[0] ??
     null;
+  const customerName = resolveCustomerName(jobs, user);
 
   return {
-    id: "current-customer",
-    name: "Customer",
+    id: user.id,
+    name: customerName,
     role: "customer",
-    location: buildLocation(currentJob),
+    location: buildLocation(currentJob, customerName),
     serviceJob: buildCurrentServiceJob(currentJob),
-    serviceIssues: jobs
-      .filter((job) => job.status === "FAILED" && job.failure_reason)
-      .map((job) => ({ reason: job.failure_reason as string })),
+    serviceIssues: buildServiceIssues(jobs),
     serviceHistory: buildServiceHistory(jobs),
   };
 }
@@ -124,7 +164,19 @@ function extractErrorMessage(error: unknown): string {
   return "Request failed";
 }
 
-const CustomerPage = () => {
+function mapRequestType(
+  serviceType: ServiceJob["serviceType"] | null,
+): CustomerRequestType | null {
+  if (serviceType === "extra_pickup") return "EXTRA";
+  if (serviceType === "skip_pickup") return "SKIP";
+  return null;
+}
+
+type CustomerPageProps = {
+  user: User;
+};
+
+const CustomerPage = ({ user }: CustomerPageProps) => {
   const [jobs, setJobs] = useState<CustomerServiceJobApi[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -149,10 +201,7 @@ const CustomerPage = () => {
     void loadCustomerJobs();
   }, []);
 
-  const customer: Customer = useMemo(
-    () => buildCustomerViewModel(jobs),
-    [jobs],
-  );
+  const customer: Customer = useMemo(() => buildCustomerViewModel(jobs, user), [jobs, user]);
 
   useEffect(() => {
     setSelectedServiceType(customer.serviceJob.serviceType);
@@ -161,6 +210,28 @@ const CustomerPage = () => {
   useEffect(() => {
     setIsRequestSubmitted(false);
   }, [customer.serviceJob.jobId]);
+
+  async function handleRequestSubmit() {
+    try {
+      const requestType = mapRequestType(selectedServiceType);
+      if (!requestType) {
+        throw new Error("Only extra pickup and skip pickup requests can be submitted");
+      }
+
+      if (!customer.serviceJob.serviceDate) {
+        throw new Error("Scheduled pickup date is unavailable for this request");
+      }
+
+      setError(null);
+      await createCustomerRequest({
+        request_type: requestType,
+        requested_for_date: customer.serviceJob.serviceDate,
+      });
+    } catch (submitError) {
+      setError(extractErrorMessage(submitError));
+      throw submitError;
+    }
+  }
 
   if (loading) {
     return <div className="p-6">Loading customer service jobs...</div>;
@@ -172,7 +243,10 @@ const CustomerPage = () => {
 
   return (
     <div className="p-6">
-      <CustomerHeader location={formatLocationLabel(customer.location)} />
+      <CustomerHeader
+        customerName={customer.name}
+        location={formatLocationLabel(customer.location)}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 items-stretch">
         <div className="flex flex-col gap-4">
@@ -183,6 +257,7 @@ const CustomerPage = () => {
             setSelectedServiceType={setSelectedServiceType}
             isSubmitted={isRequestSubmitted}
             onSubmittedChange={setIsRequestSubmitted}
+            onSubmit={handleRequestSubmit}
           />
           <ServiceHistoryCard serviceHistory={customer.serviceHistory} />
         </div>
@@ -191,7 +266,7 @@ const CustomerPage = () => {
             serviceJob={customer.serviceJob}
             isSubmitted={isRequestSubmitted}
           />
-          <ServiceIssuesCard />
+          <ServiceIssuesCard issues={customer.serviceIssues} />
         </div>
       </div>
     </div>

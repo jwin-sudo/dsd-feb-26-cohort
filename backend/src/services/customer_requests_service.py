@@ -1,7 +1,14 @@
-from src.api.supabase_client import supabase
-from datetime import datetime
+from datetime import date, datetime
+
+from fastapi import HTTPException, status
+
+from src.api.supabase_client import supabase, supabase_admin
 
 TABLE = "customer_requests"
+
+
+def _client():
+    return supabase_admin or supabase
 
 
 def get_all_requests():
@@ -28,12 +35,66 @@ def get_request(request_id: int):
     return None
 
 
+def _get_customer_context_for_user(user_id: str) -> tuple[int, int]:
+    client = _client()
+
+    customer_response = (
+        client.table("customers")
+        .select("customer_id")
+        .eq("user_id", user_id)
+        .limit(1)
+        .execute()
+    )
+    customer_rows = customer_response.data or []
+    if not customer_rows:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Customer profile not found for current user",
+        )
+
+    customer_id = customer_rows[0]["customer_id"]
+    location_response = (
+        client.table("service_locations")
+        .select("location_id")
+        .eq("customer_id", customer_id)
+        .order("location_id")
+        .limit(1)
+        .execute()
+    )
+    location_rows = location_response.data or []
+    if not location_rows:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Service location not found for current user",
+        )
+
+    return customer_id, location_rows[0]["location_id"]
+
+
 def create_request(data: dict):
     if "created_at" not in data or data["created_at"] is None:
         data["created_at"] = datetime.now().isoformat()
 
-    response = supabase.table(TABLE).insert(data).execute()
+    response = _client().table(TABLE).insert(data).execute()
     return response.data[0]
+
+
+def create_request_for_customer_user(
+    *,
+    user_id: str,
+    request_type: str,
+    requested_for_date: date,
+) -> dict:
+    customer_id, location_id = _get_customer_context_for_user(user_id)
+    return create_request(
+        {
+            "customer_id": customer_id,
+            "location_id": location_id,
+            "request_type": request_type,
+            "requested_for_date": requested_for_date.isoformat(),
+            "status": "PENDING",
+        }
+    )
 
 
 def update_request(request_id: int, data: dict):

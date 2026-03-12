@@ -1,5 +1,6 @@
 import http from "./http";
 import type {
+  CreateCustomerRequestPayload,
   CustomerServiceJobApi,
   CustomerServiceJobsResponse,
   UpdateCustomerServiceJobPayload,
@@ -19,4 +20,10 @@ export async function patchCustomerServiceJobMetadata(
     payload,
   );
   return response.data.service_job;
+}
+
+export async function createCustomerRequest(
+  payload: CreateCustomerRequestPayload,
+): Promise<void> {
+  await http.post("/customer_requests/customer", payload);
 }

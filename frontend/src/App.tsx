@@ -153,9 +153,13 @@ function AppRoutes() {
             <Route
               path="/customer"
               element={
-                <RoleGuard user={user} allowed="customer">
-                  <CustomerPage />
-                </RoleGuard>
+                user && user.role === "customer" ? (
+                  <RoleGuard user={user} allowed="customer">
+                    <CustomerPage user={user} />
+                  </RoleGuard>
+                ) : (
+                  <Navigate to="/login" replace />
+                )
               }
             />
 
