@@ -18,7 +18,7 @@ type LocationCardProps = {
   setSelectedServiceType: (val: ServiceJob["serviceType"] | null) => void;
   isSubmitted?: boolean;
   onSubmittedChange?: (submitted: boolean) => void;
-  onSubmit?: () => void;
+  onSubmit?: () => Promise<void>;
 };
 
 const LocationCard = ({
@@ -36,11 +36,9 @@ const LocationCard = ({
     if (!selectedServiceType || !serviceJob.requestFormOpen) return;
 
     try {
-      console.log("Submitted:", { selectedServiceType });
+      await onSubmit?.();
       onSubmittedChange?.(true);
       setEditing(false);
-
-      if (onSubmit) onSubmit();
     } catch (error) {
       console.error("Submit failed:", error);
     }
@@ -48,7 +46,10 @@ const LocationCard = ({
 
   const canEdit = serviceJob.requestFormOpen && (!isSubmitted || editing);
 
-  const isSubmitEnabled = canEdit && selectedServiceType;
+  const isSubmitEnabled =
+    canEdit &&
+    !!selectedServiceType &&
+    selectedServiceType !== "normal_pickup";
 
   return (
     <Card>

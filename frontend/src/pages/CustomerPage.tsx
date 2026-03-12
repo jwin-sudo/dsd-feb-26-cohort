@@ -6,8 +6,12 @@ import LocationCard from "@/components/LocationCard";
 import ServiceStatusCard from "@/components/ServiceStatusCard";
 import ServiceHistoryCard from "@/components/ServiceHistoryCard";
 import ServiceIssuesCard from "@/components/ServiceIssuesCard";
-import { fetchCustomerServiceJobs } from "@/api/customerServiceJobs";
+import {
+  createCustomerRequest,
+  fetchCustomerServiceJobs,
+} from "@/api/customerServiceJobs";
 import type {
+  CustomerRequestType,
   Customer,
   CustomerLocation,
   CustomerServiceJobApi,
@@ -41,6 +45,15 @@ function mapServiceType(job: CustomerServiceJobApi): ServiceJob["serviceType"] {
   return job.job_source === "EXTRA_REQUEST" ? "extra_pickup" : "normal_pickup";
 }
 
+function toIsoDate(value?: string | null): string | undefined {
+  if (!value) return undefined;
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return undefined;
+
+  return date.toISOString().slice(0, 10);
+}
+
 function buildCurrentServiceJob(job: CustomerServiceJobApi | null): ServiceJob {
   if (!job) {
     return {
@@ -49,6 +62,7 @@ function buildCurrentServiceJob(job: CustomerServiceJobApi | null): ServiceJob {
       service: "No active service job",
       stopOrder: 0,
       scheduledPickup: "Not scheduled",
+      serviceDate: undefined,
       requestFormOpen: false,
       serviceType: "normal_pickup",
     };
@@ -59,7 +73,8 @@ function buildCurrentServiceJob(job: CustomerServiceJobApi | null): ServiceJob {
     status: mapStatus(job.status),
     service: job.job_source === "EXTRA_REQUEST" ? "Extra Pickup" : "Scheduled",
     stopOrder: job.sequence_order ?? 0,
-    scheduledPickup: "Not provided by API",
+    scheduledPickup: formatDisplayDate(job.service_date),
+    serviceDate: toIsoDate(job.service_date),
     requestFormOpen: job.status === "PENDING" || job.status === "SKIPPED",
     serviceType: mapServiceType(job),
   };
@@ -124,6 +139,14 @@ function extractErrorMessage(error: unknown): string {
   return "Request failed";
 }
 
+function mapRequestType(
+  serviceType: ServiceJob["serviceType"] | null,
+): CustomerRequestType | null {
+  if (serviceType === "extra_pickup") return "EXTRA";
+  if (serviceType === "skip_pickup") return "SKIP";
+  return null;
+}
+
 const CustomerPage = () => {
   const [jobs, setJobs] = useState<CustomerServiceJobApi[]>([]);
   const [loading, setLoading] = useState(true);
@@ -162,6 +185,28 @@ const CustomerPage = () => {
     setIsRequestSubmitted(false);
   }, [customer.serviceJob.jobId]);
 
+  async function handleRequestSubmit() {
+    try {
+      const requestType = mapRequestType(selectedServiceType);
+      if (!requestType) {
+        throw new Error("Only extra pickup and skip pickup requests can be submitted");
+      }
+
+      if (!customer.serviceJob.serviceDate) {
+        throw new Error("Scheduled pickup date is unavailable for this request");
+      }
+
+      setError(null);
+      await createCustomerRequest({
+        request_type: requestType,
+        requested_for_date: customer.serviceJob.serviceDate,
+      });
+    } catch (submitError) {
+      setError(extractErrorMessage(submitError));
+      throw submitError;
+    }
+  }
+
   if (loading) {
     return <div className="p-6">Loading customer service jobs...</div>;
   }
@@ -183,6 +228,7 @@ const CustomerPage = () => {
             setSelectedServiceType={setSelectedServiceType}
             isSubmitted={isRequestSubmitted}
             onSubmittedChange={setIsRequestSubmitted}
+            onSubmit={handleRequestSubmit}
           />
           <ServiceHistoryCard serviceHistory={customer.serviceHistory} />
         </div>

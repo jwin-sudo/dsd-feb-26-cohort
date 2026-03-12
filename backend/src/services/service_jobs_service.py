@@ -10,6 +10,30 @@ def _client():
     return supabase_admin or supabase
 
 
+def _attach_route_service_dates(jobs: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    if not jobs:
+        return []
+
+    route_ids = list({job["route_id"] for job in jobs if job.get("route_id")})
+    if not route_ids:
+        return jobs
+
+    routes_response = (
+        _client()
+        .table("garbage_routes")
+        .select("route_id,service_date")
+        .in_("route_id", route_ids)
+        .execute()
+    )
+    routes = {
+        row["route_id"]: row.get("service_date")
+        for row in (routes_response.data or [])
+        if row.get("route_id")
+    }
+
+    return [{**job, "service_date": routes.get(job.get("route_id"))} for job in jobs]
+
+
 def _attach_location_details(jobs: list[dict[str, Any]]) -> list[dict[str, Any]]:
     if not jobs:
         return []
@@ -48,7 +72,7 @@ def _attach_location_details(jobs: list[dict[str, Any]]) -> list[dict[str, Any]]
 
 
 def _enrich_customer_jobs(jobs: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    return _attach_location_details(jobs)
+    return _attach_location_details(_attach_route_service_dates(jobs))
 
 
 def update_service_job_metadata(job_id: int, updates: dict[str, Any]) -> dict[str, Any]:

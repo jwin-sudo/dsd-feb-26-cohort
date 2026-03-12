@@ -25,6 +25,12 @@ class RequestCreate(RequestBase):
     status: Literal["PENDING", "COMPLETED", "FAILED", "SKIPPED"] = "PENDING"
     created_at: Optional[datetime] = None
 
+
+class CustomerRequestCreate(BaseModel):
+    request_type: Literal["SKIP", "EXTRA"]
+    requested_for_date: date
+
+
 class RequestUpdate(RequestBase):
     pass
 
@@ -58,6 +64,23 @@ def create_request(request: RequestCreate, _user=Depends(require_role("driver"))
         request.created_at = datetime.now()
     try:
         return customer_requests_service.create_request(request.model_dump())
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to create request")
+
+
+@router.post("/customer", response_model=RequestResponse)
+def create_customer_request(
+    request: CustomerRequestCreate,
+    user: dict = Depends(require_role("customer")),
+):
+    try:
+        return customer_requests_service.create_request_for_customer_user(
+            user_id=user["id"],
+            request_type=request.request_type,
+            requested_for_date=request.requested_for_date,
+        )
+    except HTTPException:
+        raise
     except Exception:
         raise HTTPException(status_code=500, detail="Failed to create request")
 
