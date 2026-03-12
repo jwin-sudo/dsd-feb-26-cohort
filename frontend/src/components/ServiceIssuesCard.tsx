@@ -1,5 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { TriangleAlert } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 type ServiceIssue = {
   reason: string;
@@ -72,7 +74,6 @@ const ServiceIssuesCard = () => {
     </Card>
   );
 };
-  );
-};
+
 
 export default ServiceIssuesCard;
