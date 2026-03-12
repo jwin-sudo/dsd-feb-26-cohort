@@ -100,7 +100,6 @@ const DriverDashboard = () => {
     () =>
       route?.stops.find((s) => s.location_id === selectedStopLocationId) ??
       route?.stops.find((s) => s.status === "PENDING") ??
-      route?.stops[0] ??
       null,
     [route, selectedStopLocationId],
   );
@@ -152,7 +151,7 @@ const DriverDashboard = () => {
 
   if (loading) return <div className="p-6">Loading...</div>;
   if (error) return <div className="p-6 text-red-600">{error}</div>;
-  if (!route || !currentStop || !routeHealth) return <div className="p-6">No route for today.</div>;
+  if (!route || !routeHealth) return <div className="p-6">No route for today.</div>;
 
   return (
     <div className="p-6">
@@ -162,12 +161,21 @@ const DriverDashboard = () => {
       />
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[2fr_1.4fr]">
         <div className="space-y-4">
-          <StopCard stop={currentStop} onComplete={handleStopComplete} />
+          {currentStop ? (
+            <StopCard stop={currentStop} onComplete={handleStopComplete} />
+          ) : (
+            <div className="rounded-xl border bg-green-50 p-6">
+              <p className="text-lg font-bold text-green-700">All route stops are complete.</p>
+              <p className="mt-2 text-sm text-green-800">
+                There are no pending locations left in today&apos;s route list.
+              </p>
+            </div>
+          )}
           <RouteHealthCard health={routeHealth} />
         </div>
         <RouteListCard
           stops={route.stops}
-          currentStopLocationId={currentStop.location_id}
+          currentStopLocationId={currentStop?.location_id ?? null}
           onStopSelect={handleStopSelect}
         />
       </div>
