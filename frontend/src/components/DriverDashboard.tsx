@@ -1,142 +1,109 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import DriverDashHeader from "./DriverDashHeader";
 import StopCard from "./StopCard";
 import RouteHealthCard from "./RouteHealthCard";
 import RouteListCard from "./RouteListCard";
-import http from "@/api/http";
+import { fetchManifestJobs, generateDriverManifest, fetchOptimizedRoute, type DriverManifestResponse } from "@/api/driverManifest";
+import type { Stop, Route } from "@/types/driver";
 
-import type { Driver, Stop } from "@/types/driver";
+function todayIsoDate(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function buildRoute(manifest: DriverManifestResponse): Route | null {
+  if (!manifest.route) return null;
+
+  const stops: Stop[] = [...manifest.jobs]
+    .sort((a, b) => (a.sequence_order ?? 9999) - (b.sequence_order ?? 9999))
+    .map((job) => ({
+      location_id: job.location_id,
+      sequence_order: job.sequence_order ?? 0,
+      customer_name: job.customer_name ?? "Unknown",
+      address: job.address?.street_address ?? "",
+      city: job.address?.city ?? "",
+      state: job.address?.state ?? "",
+      zip: job.address?.zipcode ?? "",
+      service: job.job_source,
+      container: "Mixed",
+      status: job.status,
+      is_extra_pickup: job.job_source === "EXTRA_REQUEST",
+      failure_reason: null,
+      proof_of_service_photo: null,
+    }));
+
+  return {
+    route_id: String(manifest.route.route_id),
+    service_date: manifest.route.service_date,
+    city: manifest.route.start_city ?? "Dallas",
+    state: manifest.route.start_state ?? "TX",
+    stops,
+    health: {
+      stops_remaining: stops.filter((s) => s.status === "PENDING").length,
+      completed: stops.filter((s) => s.status === "COMPLETED").length,
+      skipped: stops.filter((s) => s.status === "SKIPPED").length,
+      extra_pickups: stops.filter((s) => s.is_extra_pickup).length,
+    },
+  };
+}
 
 const DriverDashboard = () => {
-  const [driver, setDriver] = useState<Driver | null>(null);
+  const [route, setRoute] = useState<Route | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const loadedRef = useRef(false);  // ← add this
   const [currentStopIndex, setCurrentStopIndex] = useState(0);
   const [stops, setStops] = useState<Stop[]>([]);
 
   useEffect(() => {
-    const fetchDriverJobs = async () => {
-      try {
-        const response = await http.get("/service-jobs/");
-        const jobs = response.data.service_jobs || [];
-        
-        if (jobs.length === 0) {
-          setLoading(false);
-          return;
-        }
+    if (loadedRef.current) return;
+    loadedRef.current = true;
 
-        const stops: Stop[] = jobs.map((job: any) => {
-          const location = job.service_locations || {};
-          const customer = location.customers || {};
-          
-          return {
-            job_id: job.job_id,
-            location_id: job.location_id,
-            sequence_order: job.sequence_order || 0,
-            customer_name: customer.customer_name || "Unknown",
-            address: location.street_address || "",
-            city: location.city || "",
-            state: location.state || "",
-            zip: location.zipcode || "",
-            service: job.job_source === "EXTRA_REQUEST" ? "Extra" : "Scheduled",
-            status: job.status || "PENDING",
-            is_extra_pickup: job.job_source === "EXTRA_REQUEST",
-            failure_reason: job.failure_reason,
-            proof_of_service_photo: job.proof_of_service_photo,
-          };
-        });
+    const today = todayIsoDate();
 
-        const sortedStops = stops.sort((a, b) => a.sequence_order - b.sequence_order);
-        
-        const routeId = jobs[0]?.route_id?.toString() || "N/A";
-        const city = sortedStops[0]?.city || "Unknown";
-        const state = sortedStops[0]?.state || "";
-
-        setStops(sortedStops);
-        setDriver({
-          id: "current-driver",
-          name: "Driver",
-          role: "driver",
-          route: {
-            route_id: routeId,
-            service_date: new Date().toISOString().split('T')[0],
-            city,
-            state,
-            stops: sortedStops,
-            health: {
-              stops_remaining: 0,
-              completed: 0,
-              skipped: 0,
-              extra_pickups: 0,
-            },
-          },
-        });
-      } catch (error) {
-        console.error("Failed to fetch driver jobs:", error);
-      } finally {
-        setLoading(false);
+    async function load() {
+      // Only call generate (which writes to DB) if no route exists yet.
+      // Otherwise just fetch existing job data — no DB writes.
+      let manifest = await fetchManifestJobs(today);
+      if (!manifest.route) {
+        manifest = await generateDriverManifest(today);
       }
-    };
 
-    fetchDriverJobs();
+      // Apply ORS-optimized order in memory only — never writes to DB.
+      try {
+        const optimized = await fetchOptimizedRoute(today);
+        const orderedLocationIds: number[] = (optimized.routes?.[0]?.steps ?? [])
+          .filter((s) => s.type === "job" && s.location_id != null)
+          .map((s) => s.location_id as number);
+
+        const built = buildRoute(manifest);
+        if (built && orderedLocationIds.length > 0) {
+          const indexMap = new Map(orderedLocationIds.map((id, i) => [id, i]));
+          built.stops.sort(
+            (a, b) => (indexMap.get(a.location_id) ?? 9999) - (indexMap.get(b.location_id) ?? 9999)
+          );
+          built.stops.forEach((s, i) => { s.sequence_order = i + 1; });
+        }
+        setRoute(built);
+      } catch {
+        // ORS unavailable — fall back to stored sequence_order.
+        setRoute(buildRoute(manifest));
+      }
+    }
+
+    load()
+      .catch((e) => setError(e instanceof Error ? e.message : "Failed to load"))
+      .finally(() => setLoading(false));
   }, []);
 
   const currentStop = useMemo(
-    () => stops[currentStopIndex] ?? null,
-    [stops, currentStopIndex],
+    () => route?.stops.find((s) => s.status === "PENDING") ?? route?.stops[0] ?? null,
+    [route],
   );
 
-  const routeHealth = useMemo(() => {
-    const completed = stops.filter(s => s.status === "COMPLETED" || s.status === "FAILED").length;
-    const skipped = stops.filter(s => s.status === "SKIPPED").length;
-    const pending = stops.filter(s => s.status === "PENDING").length;
-    
-    return {
-      stops_remaining: pending,
-      completed: completed,
-      skipped: skipped,
-      extra_pickups: stops.filter(s => s.is_extra_pickup).length,
-    };
-  }, [stops]);
-
-  const handleStopComplete = (updatedStop: Stop) => {
-    setStops(prevStops => 
-      prevStops.map(s => s.job_id === updatedStop.job_id ? updatedStop : s)
-    );
-    
-    let nextIndex = currentStopIndex + 1;
-    while (nextIndex < stops.length && stops[nextIndex].status === "SKIPPED") {
-      nextIndex++;
-    }
-    
-    if (nextIndex < stops.length) {
-      setCurrentStopIndex(nextIndex);
-    }
-  };
-
-  const handleStopSelect = (locationId: number) => {
-    const index = stops.findIndex(s => s.location_id === locationId);
-    if (index !== -1) {
-      setCurrentStopIndex(index);
-    }
-  };
-
-  if (loading) {
-    return <div className="p-6">Loading...</div>;
-  }
-
-  if (!driver || !driver.route || !currentStop) {
-    return (
-      <div className="p-6">
-        <div className="max-w-md mx-auto bg-blue-50 border border-blue-200 rounded-lg p-6">
-          <h2 className="text-xl font-bold mb-4">No Jobs Available</h2>
-          <p className="mb-2">No service jobs found for your driver account.</p>
-          <p className="text-sm text-gray-600">Please contact your administrator to assign routes and jobs.</p>
-        </div>
-      </div>
-    );
-  }
-
-  const { route } = driver;
+  if (loading) return <div className="p-6">Loading...</div>;
+  if (error) return <div className="p-6 text-red-600">{error}</div>;
+  if (!route || !currentStop) return <div className="p-6">No route for today.</div>;
 
   return (
     <div className="p-6">
@@ -144,7 +111,6 @@ const DriverDashboard = () => {
         routeId={route.route_id}
         location={`${route.city}, ${route.state}`}
       />
-
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[2fr_1.4fr]">
         <div className="space-y-4">
           <StopCard stop={currentStop} onComplete={handleStopComplete} />
@@ -157,7 +123,7 @@ const DriverDashboard = () => {
         />
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default DriverDashboard
+export default DriverDashboard;
