@@ -77,7 +77,7 @@ const DriverDashboard = () => {
           .map((s) => s.location_id as number);
 
         const built = buildRoute(manifest);
-        if (built && orderedLocationIds.length > 0) {
+      if (built && orderedLocationIds.length > 0) {
           const indexMap = new Map(orderedLocationIds.map((id, i) => [id, i]));
           built.stops.sort(
             (a, b) => (indexMap.get(a.location_id) ?? 9999) - (indexMap.get(b.location_id) ?? 9999)
@@ -85,11 +85,9 @@ const DriverDashboard = () => {
           built.stops.forEach((s, i) => { s.sequence_order = i + 1; });
         }
         setRoute(built);
-        setSelectedStopLocationId(null);
       } catch {
         // ORS unavailable — fall back to stored sequence_order.
         setRoute(buildRoute(manifest));
-        setSelectedStopLocationId(null);
       }
     }
 
@@ -107,16 +105,14 @@ const DriverDashboard = () => {
     [route, selectedStopLocationId],
   );
 
-  const routeHealth = useMemo(() => {
-    if (!route) return null;
-
-    return {
-      stops_remaining: route.stops.filter((s) => s.status === "PENDING").length,
-      completed: route.stops.filter((s) => s.status === "COMPLETED").length,
-      skipped: route.stops.filter((s) => s.status === "SKIPPED").length,
-      extra_pickups: route.stops.filter((s) => s.is_extra_pickup).length,
-    };
-  }, [route]);
+  const routeHealth = route
+    ? {
+        stops_remaining: route.stops.filter((s) => s.status === "PENDING").length,
+        completed: route.stops.filter((s) => s.status === "COMPLETED").length,
+        skipped: route.stops.filter((s) => s.status === "SKIPPED").length,
+        extra_pickups: route.stops.filter((s) => s.is_extra_pickup).length,
+      }
+    : null;
 
   const handleStopComplete = (updatedStop: Stop) => {
     setRoute((currentRoute) => {
@@ -129,7 +125,6 @@ const DriverDashboard = () => {
         ),
       };
     });
-    setSelectedStopLocationId(null);
   };
 
   const handleStopSelect = (locationId: number) => {
