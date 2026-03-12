@@ -129,6 +129,7 @@ const CustomerPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedServiceType, setSelectedServiceType] = useState<ServiceJob["serviceType"] | null>(null);
+  const [isRequestSubmitted, setIsRequestSubmitted] = useState(false);
 
   useEffect(() => {
     async function loadCustomerJobs() {
@@ -157,6 +158,10 @@ const CustomerPage = () => {
     setSelectedServiceType(customer.serviceJob.serviceType);
   }, [customer.serviceJob.serviceType]);
 
+  useEffect(() => {
+    setIsRequestSubmitted(false);
+  }, [customer.serviceJob.jobId]);
+
   if (loading) {
     return <div className="p-6">Loading customer service jobs...</div>;
   }
@@ -176,11 +181,16 @@ const CustomerPage = () => {
             serviceJob={customer.serviceJob}
             selectedServiceType={selectedServiceType}
             setSelectedServiceType={setSelectedServiceType}
+            isSubmitted={isRequestSubmitted}
+            onSubmittedChange={setIsRequestSubmitted}
           />
           <ServiceHistoryCard serviceHistory={customer.serviceHistory} />
         </div>
         <div className="flex flex-col gap-4">
-          <ServiceStatusCard serviceJob={customer.serviceJob} />
+          <ServiceStatusCard
+            serviceJob={customer.serviceJob}
+            isSubmitted={isRequestSubmitted}
+          />
           <ServiceIssuesCard />
         </div>
       </div>
