@@ -118,11 +118,30 @@ const DriverDashboard = () => {
     setRoute((currentRoute) => {
       if (!currentRoute) return currentRoute;
 
+      const updatedStops = currentRoute.stops.map((stop) =>
+        stop.job_id === updatedStop.job_id ? updatedStop : stop
+      );
+      const currentIndex = updatedStops.findIndex(
+        (stop) => stop.job_id === updatedStop.job_id
+      );
+      let nextIndex = currentIndex + 1;
+
+      while (
+        nextIndex < updatedStops.length &&
+        updatedStops[nextIndex].status === "SKIPPED"
+      ) {
+        nextIndex++;
+      }
+
+      setSelectedStopLocationId(
+        nextIndex < updatedStops.length
+          ? updatedStops[nextIndex].location_id
+          : null
+      );
+
       return {
         ...currentRoute,
-        stops: currentRoute.stops.map((stop) =>
-          stop.job_id === updatedStop.job_id ? updatedStop : stop
-        ),
+        stops: updatedStops,
       };
     });
   };
