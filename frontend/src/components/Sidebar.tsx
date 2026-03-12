@@ -5,6 +5,7 @@ import { LogOut } from "lucide-react";
 import type { SidebarItem } from "../types/sidebar";
 import { Link ,useLocation} from "react-router-dom";
 import type { User } from "../types/auth";
+import { useEffect, useState } from "react";
 
 type SidebarProps = {
   items: SidebarItem[];
@@ -16,6 +17,16 @@ type SidebarProps = {
 
 const Sidebar = ({ items, user, onLogout, expand, setExpand }: SidebarProps) => {
   const location = useLocation();
+  const [isMobile, setIsMobile] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 768px)");
+    const handleChange = () => setIsMobile(mediaQuery.matches);
+    handleChange();
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, []);
 
   const allowedPathsByRole: Record<string, string[]> = {
     driver: ["/dashboard", "/driver"],
@@ -84,27 +95,101 @@ const Sidebar = ({ items, user, onLogout, expand, setExpand }: SidebarProps) => 
           })}
         </ul>
 
-        <div className="border-t flex p-2 items-center gap-2 justify-between">
-          <div className={`flex items-center gap-2 `}>
-            <CircleUser size={33} />
-            <div
-              className={`overflow-hidden transition-all ${expand ? "w-30 ml-1" : "w-0"}`}
-            >
-              <h2 className="font-semibold">{user?.email?.split("@")[0] ?? "Guest"}</h2>
-              <p className="text-xs">{user?.role ?? "—"}</p>
-            </div>
-          </div>
+        <div className="border-t flex p-2 items-center overflow-hidden">
+          {isMobile ? (
+            <div className="flex flex-col gap-2 items-stretch w-full">
+              <button
+                type="button"
+                className={`flex items-center gap-2 overflow-hidden rounded-xl p-1 cursor-pointer hover:bg-gray-200 ${
+                  expand ? "w-full" : "justify-center w-full"
+                }`}
+                onClick={() => setShowProfileModal((prev) => !prev)}
+                aria-haspopup="dialog"
+                aria-expanded={showProfileModal}
+                title="Profile"
+              >
+                <CircleUser size={33} />
+                <div
+                  className={`overflow-hidden transition-all ${
+                    expand ? "w-30 ml-1" : "w-0"
+                  }`}
+                >
+                  <h2 className="font-semibold truncate">
+                    {user?.email?.split("@")[0] ?? "Guest"}
+                  </h2>
+                  <p className="text-xs truncate">{user?.role ?? "—"}</p>
+                </div>
+              </button>
 
-          <button
-            type="button"
-            onClick={onLogout}
-            className="cursor-pointer hover:bg-gray-300 rounded-xl p-1"
-            title="Logout"
-          >
-            <LogOut size={20} />
-          </button>
+              <button
+                type="button"
+                onClick={onLogout}
+                className="cursor-pointer hover:bg-gray-300 rounded-xl p-1 shrink-0 w-full flex justify-center"
+                title="Logout"
+              >
+                <LogOut size={24} />
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center gap-2 overflow-hidden">
+                <CircleUser size={33} />
+                <div
+                  className={`overflow-hidden transition-all ${
+                    expand ? "w-30 ml-1" : "w-0"
+                  }`}
+                >
+                  <h2 className="font-semibold truncate">
+                    {user?.email?.split("@")[0] ?? "Guest"}
+                  </h2>
+                  <p className="text-xs truncate">{user?.role ?? "—"}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={onLogout}
+                className="cursor-pointer hover:bg-gray-300 rounded-xl p-1 shrink-0 ml-auto"
+                title="Logout"
+              >
+                <LogOut size={24} />
+              </button>
+            </>
+          )}
         </div>
       </nav>
+
+      {isMobile && showProfileModal ? (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-start bg-black/30"
+          onClick={() => setShowProfileModal(false)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className={`m-4 w-[240px] rounded-xl bg-white p-4 shadow-xl ${expand ? "ml-64" : "ml-20"}`}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold">User Details</h3>
+              <button
+                type="button"
+                className="rounded-md px-2 py-1 text-sm hover:bg-gray-100 cursor-pointer"
+                onClick={() => setShowProfileModal(false)}
+              >
+                Close
+              </button>
+            </div>
+            <div className="mt-3 text-sm">
+              <p className="font-medium">Username</p>
+              <p className="text-gray-600">
+                {user?.email?.split("@")[0] ?? "Guest"}
+              </p>
+              <p className="mt-2 font-medium">Role</p>
+              <p className="text-gray-600">{user?.role ?? "—"}</p>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 };

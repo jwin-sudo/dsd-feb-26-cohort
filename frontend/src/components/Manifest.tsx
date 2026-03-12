@@ -32,7 +32,7 @@
                             <th className="p-3 text-left">Location</th>
                             <th className="p-3 text-left">Customer</th>
                             <th className="p-3 text-left">Service</th>
-                            <th className="p-3 text-left">Size</th>
+                            <th className="p-3 text-left">Container</th>
                             <th className="p-3 text-left">Status</th>
                         </tr>
                     </thead>
